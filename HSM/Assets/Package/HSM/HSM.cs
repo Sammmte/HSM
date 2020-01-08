@@ -1,118 +1,136 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
+﻿using System.Collections.Generic;
+using System;
 
 namespace Paps.FSM.HSM
 {
-    public class HSM<TState, TTrigger> : IHSMWithParallelStates<TState, TTrigger>
+    public class HSM<TState, TTrigger> : IHSM<TState, TTrigger>, IHSMWithGuardConditions<TState, TTrigger>
     {
-        public int StateCount => throw new System.NotImplementedException();
+        public int StateCount => _stateHierarchy.StateCount;
 
         public int TransitionCount => throw new System.NotImplementedException();
 
-        public bool IsStarted => throw new System.NotImplementedException();
+        public bool IsStarted { get; private set; }
 
-        public TState InitialState => throw new System.NotImplementedException();
+        public TState InitialState => _stateHierarchy.InitialState;
 
-        public event StateChange<TState, TTrigger> OnBeforeStateChanges;
-        public event StateChange<TState, TTrigger> OnStateChanged;
+        public event HierarchyChanged<TState> OnBeforeHierarchyChanges;
+        public event HierarchyChanged<TState> OnHierarchyChanged;
 
-        public void AddGuardConditionTo(TState stateFrom, TTrigger trigger, TState stateTo, IGuardCondition<TState, TTrigger> guardCondition)
+        private Comparer<TState> _stateComparer;
+        private Comparer<TTrigger> _triggerComparer;
+
+        private StateHierarchy<TState> _stateHierarchy;
+
+        public HSM(IEqualityComparer<TState> stateComparer, IEqualityComparer<TTrigger> triggerComparer)
+        {
+            if (stateComparer == null) throw new ArgumentNullException(nameof(stateComparer));
+            if (triggerComparer == null) throw new ArgumentNullException(nameof(triggerComparer));
+
+            _stateComparer = new Comparer<TState>();
+            _triggerComparer = new Comparer<TTrigger>();
+
+            SetStateComparer(stateComparer);
+            SetTriggerComparer(triggerComparer);
+
+            _stateHierarchy = new StateHierarchy<TState>(_stateComparer);
+        }
+
+        public HSM() : this(EqualityComparer<TState>.Default, EqualityComparer<TTrigger>.Default)
+        {
+
+        }
+
+        public void SetStateComparer(IEqualityComparer<TState> stateComparer)
+        {
+            _stateComparer.EqualityComparer = stateComparer;
+        }
+
+        public void SetTriggerComparer(IEqualityComparer<TTrigger> triggerComparer)
+        {
+            _triggerComparer.EqualityComparer = triggerComparer;
+        }
+
+        public void AddGuardConditionTo(Transition<TState, TTrigger> transition, IGuardCondition guardCondition)
         {
             throw new System.NotImplementedException();
         }
 
         public void AddState(TState stateId, IState state)
         {
-            throw new System.NotImplementedException();
+            _stateHierarchy.AddState(stateId, state);
         }
 
-        public void AddTransition(TState stateFrom, TTrigger trigger, TState stateTo)
+        public void AddTransition(Transition<TState, TTrigger> transition)
         {
             throw new System.NotImplementedException();
         }
 
-        public bool ContainsGuardConditionOn(TState stateFrom, TTrigger trigger, TState stateTo, IGuardCondition<TState, TTrigger> guardCondition)
+        public bool ContainsGuardConditionOn(Transition<TState, TTrigger> transition, IGuardCondition guardCondition)
         {
             throw new System.NotImplementedException();
         }
 
         public bool ContainsState(TState stateId)
         {
-            throw new System.NotImplementedException();
+            return _stateHierarchy.ContainsState(stateId);
         }
 
         public bool ContainsSubstateRelation(TState superState, TState substate)
         {
-            throw new System.NotImplementedException();
+            return _stateHierarchy.ContainsSubstateRelation(superState, substate);
         }
 
-        public bool ContainsTransition(TState stateFrom, TTrigger trigger, TState stateTo)
+        public bool ContainsTransition(Transition<TState, TTrigger> transition)
         {
             throw new System.NotImplementedException();
         }
 
-        public void CreateParallelState(TState regionStateId, params TState[] innerStates)
+        public IEnumerable<TState> GetActiveHierarchyPath()
+        {
+            return _stateHierarchy.GetActiveHierarchyPath();
+        }
+
+        public KeyValuePair<Transition<TState, TTrigger>, IGuardCondition[]>[] GetGuardConditions()
         {
             throw new System.NotImplementedException();
         }
 
-        public KeyValuePair<ITransition<TState, TTrigger>, IGuardCondition<TState, TTrigger>[]>[] GetGuardConditions()
+        public IState GetStateById(TState stateId)
         {
-            throw new System.NotImplementedException();
+            return _stateHierarchy.GetStateById(stateId);
         }
 
-        public IEnumerable<TState>[] GetHierarchies()
+        public TState[] GetStates()
         {
-            throw new System.NotImplementedException();
+            return _stateHierarchy.GetStates();
         }
 
-        public TState GetIdOf(IState state)
-        {
-            throw new System.NotImplementedException();
-        }
-
-        public TState[] GetInnerStatesOf(TState regionStateId)
-        {
-            throw new System.NotImplementedException();
-        }
-
-        public IState[] GetStates()
-        {
-            throw new System.NotImplementedException();
-        }
-
-        public ITransition<TState, TTrigger>[] GetTransitions()
+        public Transition<TState, TTrigger>[] GetTransitions()
         {
             throw new System.NotImplementedException();
         }
 
         public bool IsInState(TState stateId)
         {
-            throw new System.NotImplementedException();
+            return _stateHierarchy.IsInState(stateId);
         }
 
-        public bool IsParallel(TState stateId)
-        {
-            throw new System.NotImplementedException();
-        }
-
-        public void RemoveGuardConditionFrom(TState stateFrom, TTrigger trigger, TState stateTo, IGuardCondition<TState, TTrigger> guardCondition)
+        public void RemoveGuardConditionFrom(Transition<TState, TTrigger> transition, IGuardCondition guardCondition)
         {
             throw new System.NotImplementedException();
         }
 
         public void RemoveState(TState stateId)
         {
-            throw new System.NotImplementedException();
+            _stateHierarchy.RemoveState(stateId);
         }
 
         public void RemoveSubstateRelation(TState superState, TState substate)
         {
-            throw new System.NotImplementedException();
+            _stateHierarchy.RemoveSubstateRelation(superState, substate);
         }
 
-        public void RemoveTransition(TState stateFrom, TTrigger trigger, TState stateTo)
+        public void RemoveTransition(Transition<TState, TTrigger> transition)
         {
             throw new System.NotImplementedException();
         }
@@ -124,22 +142,41 @@ namespace Paps.FSM.HSM
 
         public void SetInitialState(TState stateId)
         {
-            throw new System.NotImplementedException();
+            _stateHierarchy.InitialState = stateId;
         }
 
         public void SetSubstateRelation(TState superState, TState substate)
         {
-            throw new System.NotImplementedException();
+            _stateHierarchy.SetSubstateRelation(superState, substate);
         }
 
         public void Start()
         {
-            throw new System.NotImplementedException();
+            ValidateIsNotStarted();
+
+            IsStarted = true;
+
+            _stateHierarchy.Start();
+        }
+
+        private void ValidateIsNotStarted()
+        {
+            if (IsStarted) throw new StateMachineStartedException();
+        }
+
+        private void ValidateIsStarted()
+        {
+            if (IsStarted == false) throw new StateMachineNotStartedException();
         }
 
         public void Stop()
         {
-            throw new System.NotImplementedException();
+            if(IsStarted)
+            {
+                IsStarted = false;
+
+                _stateHierarchy.Stop();
+            }
         }
 
         public void Trigger(TTrigger trigger)
@@ -149,7 +186,34 @@ namespace Paps.FSM.HSM
 
         public void Update()
         {
-            throw new System.NotImplementedException();
+            ValidateIsStarted();
+
+            _stateHierarchy.Update();
+        }
+
+        public TState[] GetChildsOf(TState parent)
+        {
+            return _stateHierarchy.GetChildsOf(parent);
+        }
+
+        public TState GetParentOf(TState child)
+        {
+            return _stateHierarchy.GetParentOf(child);
+        }
+
+        private class Comparer<T> : IEqualityComparer<T>
+        {
+            public IEqualityComparer<T> EqualityComparer;
+
+            public bool Equals(T x, T y)
+            {
+                return EqualityComparer.Equals(x, y);
+            }
+
+            public int GetHashCode(T obj)
+            {
+                return EqualityComparer.GetHashCode(obj);
+            }
         }
     }
 }
