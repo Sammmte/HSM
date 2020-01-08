@@ -6,8 +6,13 @@
 [Oo]bj/
 [Tt]emp/
 [Ll]ogs/
+JetBrains/
+JetBrains.meta
 Assets/AssetStoreTools*
 AssetBundles*
+.idea*
+Plugins/
+Plugins.meta
 
 # Visual Studio 2015 cache directory
 .vs/

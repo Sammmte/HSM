@@ -42,15 +42,17 @@ namespace Paps.FSM.HSM
 
         bool SendEvent(IEvent messageEvent);
 
-        void SetSubstateRelation(TState superState, TState substate);
-        void RemoveSubstateRelation(TState superState, TState substate);
+        void SetSubstateRelation(TState parentState, TState substate);
+        void RemoveSubstateRelation(TState parentState, TState substate);
 
-        bool ContainsSubstateRelation(TState superState, TState substate);
+        bool ContainsSubstateRelation(TState parentState, TState substate);
 
         IEnumerable<TState> GetActiveHierarchyPath();
 
         TState[] GetChildsOf(TState parent);
 
         TState GetParentOf(TState child);
+
+        void SetInitialStateTo(TState parentState, TState initialState);
     }
 }

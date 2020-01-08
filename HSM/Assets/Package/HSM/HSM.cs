@@ -201,6 +201,11 @@ namespace Paps.FSM.HSM
             return _stateHierarchy.GetParentOf(child);
         }
 
+        public void SetInitialStateTo(TState parentState, TState initialState)
+        {
+            _stateHierarchy.SetInitialStateTo(parentState, initialState);
+        }
+
         private class Comparer<T> : IEqualityComparer<T>
         {
             public IEqualityComparer<T> EqualityComparer;

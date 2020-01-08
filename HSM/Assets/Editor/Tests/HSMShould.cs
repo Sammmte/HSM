@@ -349,17 +349,62 @@ namespace Tests
             Assert.IsTrue(hierarchyPath.Contains(1) && (hierarchyPath.Contains(2) == false));
             Assert.IsTrue(hierarchyPath.First() == 1);
 
+            hsm.SetInitialStateTo(1, 2);
             hsm.SetSubstateRelation(1, 2);
 
             hierarchyPath = hsm.GetActiveHierarchyPath();
 
-            foreach(var state in hierarchyPath)
-            {
-                Debug.Log(state);
-            }
-
             Assert.IsTrue(hierarchyPath.Contains(1) && hierarchyPath.Contains(2));
             Assert.IsTrue(hierarchyPath.First() == 1 && hierarchyPath.Last() == 2);
+        }
+
+        [Test]
+        public void ReturnCorrespondingValueWhenUserAsksIfContainsSubstateRelation()
+        {
+            HSM<int, int> hsm = new HSM<int, int>();
+
+            IState state1 = Substitute.For<IState>();
+            IState state2 = Substitute.For<IState>();
+            IState state3 = Substitute.For<IState>();
+
+            hsm.AddState(1, state1);
+            hsm.AddState(2, state2);
+            hsm.AddState(3, state3);
+            
+            hsm.SetSubstateRelation(1, 2);
+            hsm.SetSubstateRelation(2, 3);
+            
+            Assert.IsTrue(hsm.ContainsSubstateRelation(1, 2));
+            Assert.IsTrue(hsm.ContainsSubstateRelation(1, 3));
+            Assert.IsTrue(hsm.ContainsSubstateRelation(2, 3));
+        }
+
+        [Test]
+        public void ThrowAnExceptionIfUserTriesToSetSubstateRelationBetweenParentAndParent()
+        {
+            HSM<int, int> hsm = new HSM<int, int>();
+
+            IState state1 = Substitute.For<IState>();
+
+            hsm.AddState(1, state1);
+            
+            Assert.Throws<InvalidSubstateRelationException>(() => hsm.SetSubstateRelation(1, 1));
+        }
+
+        [Test]
+        public void ThrowAnExceptionIfUserTriesToSetSubstateRelationBetweenParentAndGrandfather()
+        {
+            HSM<int, int> hsm = new HSM<int, int>();
+
+            IState state1 = Substitute.For<IState>();
+            IState state2 = Substitute.For<IState>();
+
+            hsm.AddState(1, state1);
+            hsm.AddState(2, state2);
+            
+            hsm.SetSubstateRelation(1, 2);
+
+            Assert.Throws<InvalidSubstateRelationException>(() => hsm.SetSubstateRelation(2, 1));
         }
     }
 }

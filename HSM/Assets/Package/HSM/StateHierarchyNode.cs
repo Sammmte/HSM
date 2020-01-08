@@ -35,6 +35,11 @@ namespace Paps.FSM.HSM
 
             child.Parent = this;
             _childs.Add(child.StateId, child);
+
+            if (IsActive && _childs.Count == 1)
+            {
+                EnterInitialChild();
+            }
         }
 
         public void RemoveChild(TState stateId)
@@ -43,11 +48,19 @@ namespace Paps.FSM.HSM
 
             _childs[stateId].Parent = null;
             _childs.Remove(stateId);
+
+            if (IsActive)
+            {
+                ExitActiveChild();
+                
+                if(_childs.Count > 0)
+                    EnterInitialChild();
+            }
         }
 
         public bool ContainsChild(TState stateId)
         {
-            return _childs.ContainsKey(stateId);
+            return GetChild(stateId) != null;
         }
 
         public StateHierarchyNode<TState> GetImmediateChild(TState stateId)
@@ -105,7 +118,19 @@ namespace Paps.FSM.HSM
 
         private void ValidateCanAddChild(StateHierarchyNode<TState> child)
         {
-            if (_stateComparer.Equals(StateId, child.StateId) || _childs.ContainsKey(child.StateId)) throw new StateIdAlreadyAddedException();
+            ValidateDoesNotHasStateId(child.StateId);
+            ValidateFirstStateIsInitialStateWhenActive(child.StateId);
+        }
+
+        private void ValidateDoesNotHasStateId(TState stateId)
+        {
+            if (_stateComparer.Equals(StateId, stateId) || _childs.ContainsKey(stateId)) throw new StateIdAlreadyAddedException();
+        }
+
+        private void ValidateFirstStateIsInitialStateWhenActive(TState stateId)
+        {
+            if(IsActive && _childs.Count == 0 && _stateComparer.Equals(InitialState, stateId) == false)
+                throw new InvalidOperationException("Substate " + stateId + " must be the initial state");
         }
 
         private void ValidateContainsChild(TState stateId)
@@ -123,12 +148,17 @@ namespace Paps.FSM.HSM
 
             if(_childs.Count > 0)
             {
-                ActiveChild = _childs[InitialState];
+                EnterInitialChild();
+            }
+        }
 
-                if (ActiveChild != null)
-                {
-                    ActiveChild.Enter();
-                }
+        private void EnterInitialChild()
+        {
+            ActiveChild = _childs[InitialState];
+
+            if (ActiveChild != null)
+            {
+                ActiveChild.Enter();
             }
         }
 
@@ -154,15 +184,20 @@ namespace Paps.FSM.HSM
 
         public void Exit()
         {
+            ExitActiveChild();
+
+            StateObject.Exit();
+
+            IsActive = false;
+        }
+
+        private void ExitActiveChild()
+        {
             if(ActiveChild != null)
             {
                 ActiveChild.Exit();
                 ActiveChild = null;
             }
-
-            StateObject.Exit();
-
-            IsActive = false;
         }
 
         public bool Equals(StateHierarchyNode<TState> other)

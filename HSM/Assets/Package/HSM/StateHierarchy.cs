@@ -126,9 +126,29 @@ namespace Paps.FSM.HSM
         {
             ValidateContainsStateId(parent);
             ValidateContainsStateId(child);
+            ValidateHasNoParent(child);
+            ValidateParentAndChildAreNotTheSame(parent, child);
+            ValidateChildIsNotGrandfather(parent, child);
+        }
+
+        private void ValidateHasNoParent(TState child)
+        {
             if (HasParent(child))
-                throw new InvalidSubstateRelationException("Cannot set substate relation on state " + child.ToString() +
-                    " because it already has a parent. You could remove its current substate relation and then create a new one");
+                throw new InvalidSubstateRelationException
+                ("Cannot set substate relation on state " + child.ToString() + 
+                 " because it already has a parent. You could remove its current substate relation and then create a new one");
+        }
+
+        private void ValidateParentAndChildAreNotTheSame(TState parent, TState child)
+        {
+            if(_stateComparer.Equals(parent, child))
+                throw new InvalidSubstateRelationException("Parent and child cannot have the same id");
+        }
+
+        private void ValidateChildIsNotGrandfather(TState parent, TState child)
+        {
+            if(ContainsSubstateRelation(child, parent))
+                throw new InvalidSubstateRelationException("Child cannot be parent's parent");
         }
 
         public bool ContainsSubstateRelation(TState parent, TState child)
@@ -205,11 +225,12 @@ namespace Paps.FSM.HSM
             return _hierarchies.ContainsKey(stateId);
         }
 
-        public void SetInitialStateTo(TState stateId)
+        public void SetInitialStateTo(TState parent, TState stateId)
         {
             ValidateContainsStateId(stateId);
+            ValidateContainsStateId(parent);
 
-            _states[stateId].InitialState = stateId;
+            _states[parent].InitialState = stateId;
         }
 
         private void ValidateInitialState()
