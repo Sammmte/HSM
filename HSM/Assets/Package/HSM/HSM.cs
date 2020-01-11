@@ -9,9 +9,21 @@ namespace Paps.FSM.HSM
 
         public int TransitionCount => throw new System.NotImplementedException();
 
-        public bool IsStarted { get; private set; }
+        public bool IsStarted => _stateHierarchy.IsStarted;
 
-        public TState InitialState => _stateHierarchy.InitialState;
+        public TState InitialState
+        {
+            get
+            {
+                return _stateHierarchy.InitialState;
+            }
+
+            set
+            {
+                _stateHierarchy.InitialState = value;
+            }
+        }
+            
 
         public event HierarchyChanged<TState> OnBeforeHierarchyChanges;
         public event HierarchyChanged<TState> OnHierarchyChanged;
@@ -75,7 +87,7 @@ namespace Paps.FSM.HSM
             return _stateHierarchy.ContainsState(stateId);
         }
 
-        public bool ContainsSubstateRelation(TState superState, TState substate)
+        public bool AreRelatives(TState superState, TState substate)
         {
             return _stateHierarchy.ContainsSubstateRelation(superState, substate);
         }
@@ -140,11 +152,6 @@ namespace Paps.FSM.HSM
             throw new System.NotImplementedException();
         }
 
-        public void SetInitialState(TState stateId)
-        {
-            _stateHierarchy.InitialState = stateId;
-        }
-
         public void SetSubstateRelation(TState superState, TState substate)
         {
             _stateHierarchy.SetSubstateRelation(superState, substate);
@@ -154,9 +161,8 @@ namespace Paps.FSM.HSM
         {
             ValidateIsNotStarted();
 
-            IsStarted = true;
-
             _stateHierarchy.Start();
+            
         }
 
         private void ValidateIsNotStarted()
@@ -173,8 +179,6 @@ namespace Paps.FSM.HSM
         {
             if(IsStarted)
             {
-                IsStarted = false;
-
                 _stateHierarchy.Stop();
             }
         }
@@ -204,6 +208,11 @@ namespace Paps.FSM.HSM
         public void SetInitialStateTo(TState parentState, TState initialState)
         {
             _stateHierarchy.SetInitialStateTo(parentState, initialState);
+        }
+
+        public TState[] GetRoots()
+        {
+            return _stateHierarchy.GetRoots();
         }
 
         private class Comparer<T> : IEqualityComparer<T>

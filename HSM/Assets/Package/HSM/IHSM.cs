@@ -28,8 +28,6 @@ namespace Paps.FSM.HSM
 
         Transition<TState, TTrigger>[] GetTransitions();
 
-        void SetInitialState(TState stateId);
-
         bool IsInState(TState stateId);
 
         IState GetStateById(TState stateId);
@@ -45,7 +43,7 @@ namespace Paps.FSM.HSM
         void SetSubstateRelation(TState parentState, TState substate);
         void RemoveSubstateRelation(TState parentState, TState substate);
 
-        bool ContainsSubstateRelation(TState parentState, TState substate);
+        bool AreRelatives(TState parentState, TState substate);
 
         IEnumerable<TState> GetActiveHierarchyPath();
 
@@ -54,5 +52,7 @@ namespace Paps.FSM.HSM
         TState GetParentOf(TState child);
 
         void SetInitialStateTo(TState parentState, TState initialState);
+
+        TState[] GetRoots();
     }
 }

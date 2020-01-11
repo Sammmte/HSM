@@ -1,6 +1,6 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
-using System;
 
 namespace Paps.FSM.HSM
 {
@@ -18,16 +18,7 @@ namespace Paps.FSM.HSM
         public bool IsStarted { get; private set; }
 
         private TState _initialState;
-        public TState InitialState
-        {
-            get => _initialState;
-            set
-            {
-                ValidateContainsStateId(value);
-
-                _initialState = value;
-            }
-        }
+        public TState InitialState { get; set; }
 
         public StateHierarchy(IEqualityComparer<TState> stateComparer)
         {
@@ -61,6 +52,8 @@ namespace Paps.FSM.HSM
         {
             if(_states.ContainsKey(stateId))
             {
+                ValidateCanRemoveState(stateId);
+
                 IEnumerable<StateHierarchyNode<TState>> childs = _states[stateId].GetImmediateChilds();
 
                 foreach(var child in childs)
@@ -75,6 +68,12 @@ namespace Paps.FSM.HSM
             }
 
             return false;
+        }
+
+        private void ValidateCanRemoveState(TState stateId)
+        {
+            if (IsInActiveHierarchyPath(stateId))
+                throw new InvalidOperationException("Cannot remove state because it is in the active hierarchy path");
         }
 
         public bool ContainsState(TState stateId)
@@ -235,7 +234,10 @@ namespace Paps.FSM.HSM
 
         private void ValidateInitialState()
         {
-            if (_states.ContainsKey(InitialState) == false || IsHierarchyRoot(InitialState) == false) throw new InvalidInitialStateException();
+            if (_states.ContainsKey(InitialState) == false)
+                throw new InvalidInitialStateException("Initial state " + InitialState.ToString() + " was not added to state machine");
+            else if(IsHierarchyRoot(InitialState) == false)
+                throw new InvalidInitialStateException("Initial state " + InitialState.ToString() + " is not a root state");
         }
 
         private void ValidateIsStarted()
@@ -346,6 +348,28 @@ namespace Paps.FSM.HSM
             }
 
             return array;
+        }
+
+        public TState[] GetRoots()
+        {
+            return _hierarchies.Keys.ToArray();
+        }
+
+        private bool IsInActiveHierarchyPath(TState stateId)
+        {
+            var node = _currentHierarchyRootNode;
+            
+            while(node != null)
+            {
+                if(_stateComparer.Equals(node.StateId, stateId))
+                {
+                    return true;
+                }
+
+                node = node.ActiveChild;
+            }
+
+            return false;
         }
     }
 }
