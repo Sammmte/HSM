@@ -140,7 +140,7 @@ namespace Paps.FSM.HSM
 
         public void Enter()
         {
-            ValidateCanEnter();
+            ValidateInitialState();
 
             IsActive = true;
 
@@ -162,14 +162,9 @@ namespace Paps.FSM.HSM
             }
         }
 
-        private void ValidateCanEnter()
-        {
-            ValidateInitialState();
-        }
-
         private void ValidateInitialState()
         {
-            if (_childs.Count > 0 && _childs.ContainsKey(InitialState) == false) throw new InvalidInitialStateException();
+            if (_childs.Count > 1 && _childs.ContainsKey(InitialState) == false) throw new InvalidInitialStateException();
         }
 
         public void Update()

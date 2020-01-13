@@ -8,7 +8,7 @@ namespace Paps.FSM.HSM
     {
         public int StateCount => _states.Count;
 
-        public int HierarchyCount => _hierarchies.Count;
+        public int RootCount => _hierarchies.Count;
 
         private IEqualityComparer<TState> _stateComparer;
         private Dictionary<TState, StateHierarchyNode<TState>> _states;
@@ -16,8 +16,7 @@ namespace Paps.FSM.HSM
         private StateHierarchyNode<TState> _currentHierarchyRootNode;
 
         public bool IsStarted { get; private set; }
-
-        private TState _initialState;
+        
         public TState InitialState { get; set; }
 
         public StateHierarchy(IEqualityComparer<TState> stateComparer)
@@ -177,6 +176,8 @@ namespace Paps.FSM.HSM
         
         public void SwitchTo(TState stateId)
         {
+            ValidateIsStarted();
+
             if(IsValidSwitch(stateId))
             {
                 if(IsHierarchyRoot(stateId))
@@ -234,10 +235,8 @@ namespace Paps.FSM.HSM
 
         private void ValidateInitialState()
         {
-            if (_states.ContainsKey(InitialState) == false)
-                throw new InvalidInitialStateException("Initial state " + InitialState.ToString() + " was not added to state machine");
-            else if(IsHierarchyRoot(InitialState) == false)
-                throw new InvalidInitialStateException("Initial state " + InitialState.ToString() + " is not a root state");
+            if (IsHierarchyRoot(InitialState) == false)
+                throw new InvalidInitialStateException("Initial state is not root");
         }
 
         private void ValidateIsStarted()
@@ -252,8 +251,8 @@ namespace Paps.FSM.HSM
 
         public void Start()
         {
-            ValidateInitialState();
             ValidateIsNotStarted();
+            ValidateInitialState();
 
             IsStarted = true;
 
@@ -363,6 +362,7 @@ namespace Paps.FSM.HSM
             {
                 if(_stateComparer.Equals(node.StateId, stateId))
                 {
+                    return true;
                     return true;
                 }
 
