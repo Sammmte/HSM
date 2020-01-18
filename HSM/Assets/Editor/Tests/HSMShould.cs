@@ -499,7 +499,7 @@ namespace Tests
         }
 
         [Test]
-        public void ThrowAnExceptionIfUserTriesToRemoveAStateThatIsInTheActiveHierarchyPath()
+        public void ThrowAnExceptionIfUserTriesToRemoveAStateThatIsRootOfActiveHierarchyPath()
         {
             HSM<int, int> hsm = new HSM<int, int>();
 
@@ -520,8 +520,98 @@ namespace Tests
             hsm.Start();
 
             Assert.Throws<InvalidOperationException>(() => hsm.RemoveState(1));
-            Assert.Throws<InvalidOperationException>(() => hsm.RemoveState(2));
+            Assert.DoesNotThrow(() => hsm.RemoveState(2));
             Assert.DoesNotThrow(() => hsm.RemoveState(3));
+        }
+
+        [Test]
+        public void PreventSideEffectsIfIsInvalidInitialStateWhenStarting()
+        {
+            HSM<int, int> hsm = new HSM<int, int>();
+
+            IState state1 = Substitute.For<IState>();
+            IState state2 = Substitute.For<IState>();
+            IState state3 = Substitute.For<IState>();
+            IState state4 = Substitute.For<IState>();
+
+            hsm.AddState(1, state1);
+            hsm.AddState(2, state2);
+            hsm.AddState(3, state3);
+            hsm.AddState(4, state4);
+
+            hsm.SetSubstateRelation(1, 2);
+            hsm.SetSubstateRelation(2, 3);
+            hsm.SetSubstateRelation(3, 4);
+
+            hsm.InitialState = 1;
+
+            hsm.SetInitialStateTo(1, 2);
+            hsm.SetInitialStateTo(2, 3);
+
+            Assert.Throws<InvalidInitialStateException>(hsm.Start);
+            Assert.IsFalse(hsm.IsStarted);
+        }
+
+        [Test]
+        public void LetSetSubstateRelationToAStateThatIsInTheActiveHierarchyPathAndEnterItIfIsTheOnlyOne()
+        {
+            HSM<int, int> hsm = new HSM<int, int>();
+
+            IState state1 = Substitute.For<IState>();
+            IState state2 = Substitute.For<IState>();
+            IState state3 = Substitute.For<IState>();
+
+            hsm.AddState(1, state1);
+            hsm.AddState(2, state2);
+            hsm.AddState(3, state3);
+
+            hsm.InitialState = 1;
+
+            hsm.Start();
+
+            hsm.SetInitialStateTo(1, 2);
+            hsm.SetSubstateRelation(1, 2);
+
+            state2.Received(1).Enter();
+
+            hsm.SetSubstateRelation(1, 3);
+
+            state3.DidNotReceive().Enter();
+        }
+
+        [Test]
+        public void LetRemoveSubstateRelationToAStateThatIsInTheActiveHierarchyPathAndSwitchToTheInitialStateIfItWasTheActiveChild()
+        {
+            HSM<int, int> hsm = new HSM<int, int>();
+
+            IState state1 = Substitute.For<IState>();
+            IState state2 = Substitute.For<IState>();
+            IState state3 = Substitute.For<IState>();
+            IState state4 = Substitute.For<IState>();
+
+            hsm.AddState(1, state1);
+            hsm.AddState(2, state2);
+            hsm.AddState(3, state3);
+            hsm.AddState(4, state4);
+
+            hsm.SetSubstateRelation(1, 2);
+            hsm.SetSubstateRelation(1, 3);
+            hsm.SetSubstateRelation(2, 4);
+
+            hsm.InitialState = 1;
+
+            hsm.SetInitialStateTo(1, 2);
+            hsm.SetInitialStateTo(2, 4);
+
+            hsm.Start();
+
+            hsm.SetInitialStateTo(1, 3);
+
+            hsm.RemoveState(2);
+
+            state2.Received(1).Exit();
+            state4.Received(1).Exit();
+            state3.Received(1).Enter();
         }
     }
 }

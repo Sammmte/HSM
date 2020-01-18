@@ -53,11 +53,20 @@ namespace Paps.FSM.HSM
             {
                 ValidateCanRemoveState(stateId);
 
-                IEnumerable<StateHierarchyNode<TState>> childs = _states[stateId].GetImmediateChilds();
+                StateHierarchyNode<TState> node = _states[stateId];
 
-                foreach(var child in childs)
+                if (node.Parent != null)
                 {
-                    RemoveSubstateRelation(stateId, child.StateId);
+                    RemoveSubstateRelation(node.Parent.StateId, stateId);
+                }
+                else
+                {
+                    IEnumerable<StateHierarchyNode<TState>> nodeChilds = node.GetImmediateChilds();
+
+                    foreach (var child in nodeChilds)
+                    {
+                        RemoveSubstateRelation(stateId, child.StateId);
+                    }
                 }
 
                 _hierarchies.Remove(stateId);
@@ -71,8 +80,8 @@ namespace Paps.FSM.HSM
 
         private void ValidateCanRemoveState(TState stateId)
         {
-            if (IsInActiveHierarchyPath(stateId))
-                throw new InvalidOperationException("Cannot remove state because it is in the active hierarchy path");
+            if (IsInActiveHierarchyPath(stateId) && IsHierarchyRoot(stateId))
+                throw new InvalidOperationException("Cannot remove state because it is the root of the active hierarchy path");
         }
 
         public bool ContainsState(TState stateId)
@@ -233,10 +242,17 @@ namespace Paps.FSM.HSM
             _states[parent].InitialState = stateId;
         }
 
-        private void ValidateInitialState()
+        private void ValidateInitialStates()
         {
             if (IsHierarchyRoot(InitialState) == false)
                 throw new InvalidInitialStateException("Initial state is not root");
+
+            ValidateInitialStateOfRootNode();
+        }
+
+        private void ValidateInitialStateOfRootNode()
+        {
+            if (_states[InitialState].IsValidInitialStateRecursively() == false) throw new InvalidInitialStateException();
         }
 
         private void ValidateIsStarted()
@@ -252,7 +268,7 @@ namespace Paps.FSM.HSM
         public void Start()
         {
             ValidateIsNotStarted();
-            ValidateInitialState();
+            ValidateInitialStates();
 
             IsStarted = true;
 
@@ -272,11 +288,22 @@ namespace Paps.FSM.HSM
         {
             if(IsStarted)
             {
-                IsStarted = false;
+                try
+                {
+                    _currentHierarchyRootNode.Exit();
 
-                _currentHierarchyRootNode.Exit();
+                    IsStarted = false;
 
-                _currentHierarchyRootNode = null;
+                    _currentHierarchyRootNode = null;
+                }
+                catch
+                {
+                    IsStarted = false;
+
+                    _currentHierarchyRootNode = null;
+
+                    throw;
+                }
             }
         }
 
@@ -356,20 +383,7 @@ namespace Paps.FSM.HSM
 
         private bool IsInActiveHierarchyPath(TState stateId)
         {
-            var node = _currentHierarchyRootNode;
-            
-            while(node != null)
-            {
-                if(_stateComparer.Equals(node.StateId, stateId))
-                {
-                    return true;
-                    return true;
-                }
-
-                node = node.ActiveChild;
-            }
-
-            return false;
+            return _states[stateId].IsActive;
         }
     }
 }

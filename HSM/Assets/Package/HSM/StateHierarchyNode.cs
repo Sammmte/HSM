@@ -46,15 +46,24 @@ namespace Paps.FSM.HSM
         {
             ValidateCanRemove(stateId);
 
-            _childs[stateId].Parent = null;
-            _childs.Remove(stateId);
-
-            if (IsActive)
+            if (ActiveChild != null && _stateComparer.Equals(ActiveChild.StateId, stateId))
             {
-                ExitActiveChild();
-                
-                if(_childs.Count > 0)
+                ActiveChild.Exit();
+                ActiveChild.Parent = null;
+
+                ActiveChild = null;
+
+                _childs.Remove(stateId);
+
+                if (_childs.Count > 0)
+                {
                     EnterInitialChild();
+                }
+            }
+            else
+            {
+                _childs[stateId].Parent = null;
+                _childs.Remove(stateId);
             }
         }
 
@@ -113,13 +122,30 @@ namespace Paps.FSM.HSM
         private void ValidateCanRemove(TState stateId)
         {
             if (ActiveChild != null && _stateComparer.Equals(ActiveChild.StateId, stateId))
-                throw new InvalidOperationException("Cannot remove state while it's active");
+            {
+                if(IsValidInitialStateRecursively() == false)
+                {
+                    throw new InvalidInitialStateException("Cannot remove state because a switch to the initial state would be invalid");
+                }
+            }
         }
 
         private void ValidateCanAddChild(StateHierarchyNode<TState> child)
         {
             ValidateDoesNotHasStateId(child.StateId);
             ValidateFirstStateIsInitialStateWhenActive(child.StateId);
+            ValidateInitialStatesForNode(child);
+        }
+
+        private void ValidateInitialStatesForNode(StateHierarchyNode<TState> node)
+        {
+            if (IsActive && _childs.Count == 0)
+            {
+                if (IsValidInitialStateRecursively(node) == false)
+                {
+                    throw new InvalidInitialStateException("Cannot add state because an enter initial state operation would be invalid");
+                }
+            }
         }
 
         private void ValidateDoesNotHasStateId(TState stateId)
@@ -140,16 +166,80 @@ namespace Paps.FSM.HSM
 
         public void Enter()
         {
-            ValidateInitialState();
+            ValidateEnterRecursively();
 
-            IsActive = true;
+            EnterNodeRecursively();
 
-            StateObject.Enter();
+            EnterStateObjectRecursively();
+        }
 
-            if(_childs.Count > 0)
+        private void EnterNodeRecursively()
+        {
+            var node = this;
+
+            while(node != null)
             {
-                EnterInitialChild();
+                node.IsActive = true;
+
+                if(node.ChildCount > 0)
+                {
+                    node.ActiveChild = node._childs[node.InitialState];
+                    node = node.ActiveChild;
+                }
+                else
+                {
+                    node = null;
+                }
             }
+        }
+
+        private void EnterStateObjectRecursively()
+        {
+            List<Exception> exceptions = new List<Exception>();
+
+            var node = this;
+
+            while(node != null)
+            {
+                try
+                {
+                    node.StateObject.Enter();
+                }
+                catch(Exception e)
+                {
+                    exceptions.Add(e);
+                }
+
+                node = node.ActiveChild;
+            }
+
+            if(exceptions.Count > 0)
+            {
+                throw new AggregateException(exceptions);
+            }
+        }
+
+        public bool IsValidInitialStateRecursively()
+        {
+            return IsValidInitialStateRecursively(this);
+        }
+
+        private bool IsValidInitialStateRecursively(StateHierarchyNode<TState> node)
+        {
+            if (node.IsValidInitialState())
+            {
+                foreach (var child in node._childs)
+                {
+                    if (child.Value.IsValidInitialStateRecursively() == false)
+                    {
+                        return false;
+                    }
+                }
+
+                return true;
+            }
+
+            return false;
         }
 
         private void EnterInitialChild()
@@ -162,9 +252,14 @@ namespace Paps.FSM.HSM
             }
         }
 
-        private void ValidateInitialState()
+        private void ValidateEnterRecursively()
         {
-            if (_childs.Count > 1 && _childs.ContainsKey(InitialState) == false) throw new InvalidInitialStateException();
+            if (IsValidInitialState() == false) throw new InvalidInitialStateException();
+        }
+
+        private bool IsValidInitialState()
+        {
+            return (_childs.Count > 0 && _childs.ContainsKey(InitialState)) || _childs.Count == 0;
         }
 
         public void Update()
