@@ -130,6 +130,17 @@ namespace Paps.FSM.HSM
             _states[parent].AddChild(childNode);
         }
 
+        private void ValidateCanSetSubstateRelation(TState parent, TState child)
+        {
+            ValidateContainsStateId(parent);
+            ValidateContainsStateId(child);
+            ValidateHasNoParent(child);
+            ValidateParentAndChildAreNotTheSame(parent, child);
+            ValidateChildIsNotGrandfather(parent, child);
+            ValidateNewChildIsInitialStateIfParentIsActiveAndHasNoChild(parent, child);
+            ValidateNewChildHasValidInitialStatesInHierarchyPathIfParentIsActiveAndHasNoChild(parent, child);
+        }
+
         public bool RemoveSubstateRelation(TState parent, TState child)
         {
             if(ContainsState(parent) && ContainsState(child))
@@ -156,17 +167,6 @@ namespace Paps.FSM.HSM
         private void ValidateCanRemoveSubstateRelation(TState parent, TState child)
         {
             ValidateSwitchToInitialStateIfIsAnActiveState(parent);
-        }
-
-        private void ValidateCanSetSubstateRelation(TState parent, TState child)
-        {
-            ValidateContainsStateId(parent);
-            ValidateContainsStateId(child);
-            ValidateHasNoParent(child);
-            ValidateParentAndChildAreNotTheSame(parent, child);
-            ValidateChildIsNotGrandfather(parent, child);
-            ValidateNewChildIsInitialStateIfParentIsActiveAndHasNoChild(parent, child);
-            ValidateNewChildHasValidInitialStatesInHierarchyPathIfParentIsActiveAndHasNoChild(parent, child);
         }
 
         private void ValidateNewChildHasValidInitialStatesInHierarchyPathIfParentIsActiveAndHasNoChild(TState parent, TState child)

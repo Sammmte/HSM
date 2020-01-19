@@ -257,11 +257,51 @@ namespace Paps.FSM.HSM
 
         public void Exit()
         {
-            ExitActiveChild();
+            List<Exception> possibleExceptions = new List<Exception>();
 
-            StateObject.Exit();
+            ExitStateObjectRecursively(possibleExceptions);
 
-            IsActive = false;
+            ExitNodeRecursively();
+
+            if(possibleExceptions.Count > 0)
+            {
+                throw new AggregateException(possibleExceptions);
+            }
+        }
+
+        private void ExitStateObjectRecursively(List<Exception> possibleExceptions)
+        {
+            var topNode = Parent;
+            var node = GetActiveLeaf();
+
+            while(node != topNode)
+            {
+                try
+                {
+                    node.StateObject.Exit();
+                }
+                catch(Exception e)
+                {
+                    possibleExceptions.Add(e);
+                }
+
+                node = node.Parent;
+            }
+        }
+
+        private void ExitNodeRecursively()
+        {
+            var topNode = Parent;
+            var node = GetActiveLeaf();
+
+            while(node != topNode)
+            {
+                node.ActiveChild = null;
+
+                node.IsActive = false;
+
+                node = node.Parent;
+            }
         }
 
         private void ExitActiveChild()
@@ -286,6 +326,21 @@ namespace Paps.FSM.HSM
         IEnumerator IEnumerable.GetEnumerator()
         {
             return this.GetEnumerator();
+        }
+
+        public StateHierarchyNode<TState> GetActiveLeaf()
+        {
+            if(IsActive)
+            {
+                if (ActiveChild != null)
+                {
+                    return ActiveChild.GetActiveLeaf();
+                }
+
+                return this;
+            }
+
+            return null;
         }
     }
 }

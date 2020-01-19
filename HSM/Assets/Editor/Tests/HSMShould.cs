@@ -838,5 +838,189 @@ namespace Tests
                 state1.Exit();
             });
         }
+
+        [Test]
+        public void ReturnCorrespondingActiveHierarchyPathEvenWhenStateObjectsAreEntering()
+        {
+            HSM<int, int> hsm = new HSM<int, int>();
+
+            IState state1 = Substitute.For<IState>();
+            IState state2 = Substitute.For<IState>();
+            IState state3 = Substitute.For<IState>();
+
+            state1.When(state => state.Enter())
+                .Do(callBackInfo =>
+                {
+                    var activeHierarchyPath = hsm.GetActiveHierarchyPath();
+
+                    Assert.IsTrue(
+                        activeHierarchyPath.Contains(1) &&
+                        activeHierarchyPath.Contains(2) &&
+                        activeHierarchyPath.Contains(3)
+                        );
+                });
+
+            hsm.AddState(1, state1);
+            hsm.AddState(2, state2);
+            hsm.AddState(3, state3);
+
+            hsm.SetImmediateSubstateRelation(1, 2);
+            hsm.SetImmediateSubstateRelation(2, 3);
+
+            hsm.SetInitialStateTo(1, 2);
+            hsm.SetInitialStateTo(2, 3);
+
+            hsm.InitialState = 1;
+
+            hsm.Start();
+        }
+
+        [Test]
+        public void ReturnCorrespondingActiveHierarchyPathEvenWhenStateObjectsAreExiting()
+        {
+            HSM<int, int> hsm = new HSM<int, int>();
+
+            IState state1 = Substitute.For<IState>();
+            IState state2 = Substitute.For<IState>();
+            IState state3 = Substitute.For<IState>();
+
+            state1.When(state => state.Exit())
+                .Do(callBackInfo =>
+                {
+                    var activeHierarchyPath = hsm.GetActiveHierarchyPath();
+
+                    Assert.IsTrue(
+                        activeHierarchyPath.Contains(1) &&
+                        activeHierarchyPath.Contains(2) &&
+                        activeHierarchyPath.Contains(3)
+                        );
+                });
+
+            hsm.AddState(1, state1);
+            hsm.AddState(2, state2);
+            hsm.AddState(3, state3);
+
+            hsm.SetImmediateSubstateRelation(1, 2);
+            hsm.SetImmediateSubstateRelation(2, 3);
+
+            hsm.SetInitialStateTo(1, 2);
+            hsm.SetInitialStateTo(2, 3);
+
+            hsm.InitialState = 1;
+
+            hsm.Start();
+
+            hsm.Stop();
+        }
+
+        [Test]
+        public void ThrowAnAggregateExceptionOfAllExceptionsThrownInEnterMethodsOfObjectStatesWhenStartingWithNoSideEffects()
+        {
+            HSM<int, int> hsm = new HSM<int, int>();
+
+            IState state1 = Substitute.For<IState>();
+            IState state2 = Substitute.For<IState>();
+            IState state3 = Substitute.For<IState>();
+
+            var exception1 = new InvalidOperationException();
+            var exception2 = new InvalidInitialStateException();
+
+            state1.When(state => state.Enter()).Do(callback => throw exception1);
+            state3.When(state => state.Enter()).Do(callback => throw exception2);
+
+            hsm.AddState(1, state1);
+            hsm.AddState(2, state2);
+            hsm.AddState(3, state3);
+
+            hsm.SetImmediateSubstateRelation(1, 2);
+            hsm.SetImmediateSubstateRelation(2, 3);
+
+            hsm.SetInitialStateTo(1, 2);
+            hsm.SetInitialStateTo(2, 3);
+
+            hsm.InitialState = 1;
+
+            var aggregateException = Assert.Throws<AggregateException>(() => hsm.Start());
+
+            Assert.IsTrue(aggregateException.InnerExceptions.Contains(exception1) && 
+                aggregateException.InnerExceptions.Contains(exception2));
+
+            Assert.IsTrue(hsm.IsStarted);
+
+            state2.Received(1).Enter();
+        }
+
+        [Test]
+        public void ThrowAnAggregateExceptionOfAllExceptionsThrownInEnterMethodsOfObjectStatesWhenStopingWithNoSideEffects()
+        {
+            HSM<int, int> hsm = new HSM<int, int>();
+
+            IState state1 = Substitute.For<IState>();
+            IState state2 = Substitute.For<IState>();
+            IState state3 = Substitute.For<IState>();
+
+            var exception1 = new InvalidOperationException();
+            var exception2 = new InvalidInitialStateException();
+
+            state1.When(state => state.Exit()).Do(callback => throw exception1);
+            state3.When(state => state.Exit()).Do(callback => throw exception2);
+
+            hsm.AddState(1, state1);
+            hsm.AddState(2, state2);
+            hsm.AddState(3, state3);
+
+            hsm.SetImmediateSubstateRelation(1, 2);
+            hsm.SetImmediateSubstateRelation(2, 3);
+
+            hsm.SetInitialStateTo(1, 2);
+            hsm.SetInitialStateTo(2, 3);
+
+            hsm.InitialState = 1;
+
+            hsm.Start();
+
+            var aggregateException = Assert.Throws<AggregateException>(() => hsm.Stop());
+
+            Assert.IsTrue(aggregateException.InnerExceptions.Contains(exception1) &&
+                aggregateException.InnerExceptions.Contains(exception2));
+
+            Assert.IsFalse(hsm.IsStarted);
+
+            state2.Received(1).Exit();
+        }
+
+        [Test]
+        public void ThrowsCorrectlyAnExceptionThrownWhenUpdatingAndCutsTheUpdateFlow()
+        {
+            HSM<int, int> hsm = new HSM<int, int>();
+
+            IState state1 = Substitute.For<IState>();
+            IState state2 = Substitute.For<IState>();
+            IState state3 = Substitute.For<IState>();
+
+            var exception1 = new InvalidOperationException();
+            var exception2 = new InvalidInitialStateException();
+
+            state2.When(state => state.Update()).Do(callback => throw new StateIdAlreadyAddedException());
+
+            hsm.AddState(1, state1);
+            hsm.AddState(2, state2);
+            hsm.AddState(3, state3);
+
+            hsm.SetImmediateSubstateRelation(1, 2);
+            hsm.SetImmediateSubstateRelation(2, 3);
+
+            hsm.SetInitialStateTo(1, 2);
+            hsm.SetInitialStateTo(2, 3);
+
+            hsm.InitialState = 1;
+
+            hsm.Start();
+
+            Assert.Throws<StateIdAlreadyAddedException>(hsm.Update);
+
+            state1.Received(1).Update();
+            state3.DidNotReceive().Update();
+        }
     }
 }
