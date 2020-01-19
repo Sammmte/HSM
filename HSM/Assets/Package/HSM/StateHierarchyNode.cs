@@ -31,8 +31,6 @@ namespace Paps.FSM.HSM
 
         public void AddChild(StateHierarchyNode<TState> child)
         {
-            ValidateCanAddChild(child);
-
             child.Parent = this;
             _childs.Add(child.StateId, child);
 
@@ -44,8 +42,6 @@ namespace Paps.FSM.HSM
 
         public void RemoveChild(TState stateId)
         {
-            ValidateCanRemove(stateId);
-
             if (ActiveChild != null && _stateComparer.Equals(ActiveChild.StateId, stateId))
             {
                 ActiveChild.Exit();
@@ -70,6 +66,11 @@ namespace Paps.FSM.HSM
         public bool ContainsChild(TState stateId)
         {
             return GetChild(stateId) != null;
+        }
+
+        public bool ContainsImmediateChild(TState stateId)
+        {
+            return _childs.ContainsKey(stateId);
         }
 
         public StateHierarchyNode<TState> GetImmediateChild(TState stateId)
@@ -117,24 +118,6 @@ namespace Paps.FSM.HSM
                 childs.Add(child.Value);
                 child.Value.GetChildsRecursively(childs);
             }
-        }
-
-        private void ValidateCanRemove(TState stateId)
-        {
-            if (ActiveChild != null && _stateComparer.Equals(ActiveChild.StateId, stateId))
-            {
-                if(IsValidInitialStateRecursively() == false)
-                {
-                    throw new InvalidInitialStateException("Cannot remove state because a switch to the initial state would be invalid");
-                }
-            }
-        }
-
-        private void ValidateCanAddChild(StateHierarchyNode<TState> child)
-        {
-            ValidateDoesNotHasStateId(child.StateId);
-            ValidateFirstStateIsInitialStateWhenActive(child.StateId);
-            ValidateInitialStatesForNode(child);
         }
 
         private void ValidateInitialStatesForNode(StateHierarchyNode<TState> node)

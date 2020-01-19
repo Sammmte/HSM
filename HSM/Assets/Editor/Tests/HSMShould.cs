@@ -135,7 +135,7 @@ namespace Tests
             hsm.AddState(1, state1);
             hsm.AddState(2, state2);
 
-            hsm.SetSubstateRelation(1, 2);
+            hsm.SetImmediateSubstateRelation(1, 2);
 
             Assert.IsTrue(hsm.AreRelatives(1, 2));
         }
@@ -149,9 +149,9 @@ namespace Tests
 
             hsm.AddState(1, state1);
 
-            Assert.Throws<StateIdNotAddedException>(() => hsm.SetSubstateRelation(1, 2));
-            Assert.Throws<StateIdNotAddedException>(() => hsm.SetSubstateRelation(2, 1));
-            Assert.Throws<StateIdNotAddedException>(() => hsm.SetSubstateRelation(2, 3));
+            Assert.Throws<StateIdNotAddedException>(() => hsm.SetImmediateSubstateRelation(1, 2));
+            Assert.Throws<StateIdNotAddedException>(() => hsm.SetImmediateSubstateRelation(2, 1));
+            Assert.Throws<StateIdNotAddedException>(() => hsm.SetImmediateSubstateRelation(2, 3));
         }
 
         [Test]
@@ -165,11 +165,11 @@ namespace Tests
             hsm.AddState(1, state1);
             hsm.AddState(2, state2);
 
-            hsm.SetSubstateRelation(1, 2);
+            hsm.SetImmediateSubstateRelation(1, 2);
 
             Assert.IsTrue(hsm.AreRelatives(1, 2));
 
-            hsm.RemoveSubstateRelation(1, 2);
+            hsm.RemoveImmediateSubstateRelation(1, 2);
 
             Assert.IsFalse(hsm.AreRelatives(1, 2));
         }
@@ -185,7 +185,7 @@ namespace Tests
             hsm.AddState(1, state1);
             hsm.AddState(2, state2);
 
-            hsm.SetSubstateRelation(1, 2);
+            hsm.SetImmediateSubstateRelation(1, 2);
 
             Assert.IsTrue(hsm.GetParentOf(2) == 1);
         }
@@ -203,8 +203,8 @@ namespace Tests
             hsm.AddState(2, state2);
             hsm.AddState(3, state3);
 
-            hsm.SetSubstateRelation(1, 2);
-            hsm.SetSubstateRelation(1, 3);
+            hsm.SetImmediateSubstateRelation(1, 2);
+            hsm.SetImmediateSubstateRelation(1, 3);
 
             Assert.IsTrue(hsm.GetChildsOf(1).Contains(2) && hsm.GetChildsOf(1).Contains(3));
         }
@@ -320,6 +320,27 @@ namespace Tests
         }
 
         [Test]
+        public void ReturnCorrespondingValueWhenUserAsksIfStatesAreImmediateRelatives()
+        {
+            HSM<int, int> hsm = new HSM<int, int>();
+
+            IState state1 = Substitute.For<IState>();
+            IState state2 = Substitute.For<IState>();
+            IState state3 = Substitute.For<IState>();
+
+            hsm.AddState(1, state1);
+            hsm.AddState(2, state2);
+            hsm.AddState(3, state3);
+
+            hsm.SetImmediateSubstateRelation(1, 2);
+            hsm.SetImmediateSubstateRelation(2, 3);
+
+            Assert.IsTrue(hsm.AreImmediateRelatives(1, 2));
+            Assert.IsTrue(hsm.AreImmediateRelatives(2, 3));
+            Assert.IsFalse(hsm.AreImmediateRelatives(1, 3));
+        }
+
+        [Test]
         public void ReturnActiveHierarchyPath()
         {
             HSM<int, int> hsm = new HSM<int, int>();
@@ -340,7 +361,7 @@ namespace Tests
             Assert.IsTrue(hierarchyPath.First() == 1);
 
             hsm.SetInitialStateTo(1, 2);
-            hsm.SetSubstateRelation(1, 2);
+            hsm.SetImmediateSubstateRelation(1, 2);
 
             hierarchyPath = hsm.GetActiveHierarchyPath();
 
@@ -361,8 +382,8 @@ namespace Tests
             hsm.AddState(2, state2);
             hsm.AddState(3, state3);
             
-            hsm.SetSubstateRelation(1, 2);
-            hsm.SetSubstateRelation(2, 3);
+            hsm.SetImmediateSubstateRelation(1, 2);
+            hsm.SetImmediateSubstateRelation(2, 3);
             
             Assert.IsTrue(hsm.AreRelatives(1, 2));
             Assert.IsTrue(hsm.AreRelatives(1, 3));
@@ -378,7 +399,7 @@ namespace Tests
 
             hsm.AddState(1, state1);
             
-            Assert.Throws<InvalidSubstateRelationException>(() => hsm.SetSubstateRelation(1, 1));
+            Assert.Throws<InvalidSubstateRelationException>(() => hsm.SetImmediateSubstateRelation(1, 1));
         }
 
         [Test]
@@ -392,9 +413,9 @@ namespace Tests
             hsm.AddState(1, state1);
             hsm.AddState(2, state2);
             
-            hsm.SetSubstateRelation(1, 2);
+            hsm.SetImmediateSubstateRelation(1, 2);
 
-            Assert.Throws<InvalidSubstateRelationException>(() => hsm.SetSubstateRelation(2, 1));
+            Assert.Throws<InvalidSubstateRelationException>(() => hsm.SetImmediateSubstateRelation(2, 1));
         }
 
         [Test]
@@ -412,10 +433,10 @@ namespace Tests
             hsm.AddState(3, state3);
             hsm.AddState(4, state4);
 
-            hsm.SetSubstateRelation(1, 2);
-            hsm.SetSubstateRelation(3, 4);
+            hsm.SetImmediateSubstateRelation(1, 2);
+            hsm.SetImmediateSubstateRelation(3, 4);
 
-            Assert.Throws<InvalidSubstateRelationException>(() => hsm.SetSubstateRelation(1, 4));
+            Assert.Throws<InvalidSubstateRelationException>(() => hsm.SetImmediateSubstateRelation(1, 4));
         }
 
         [Test]
@@ -429,7 +450,7 @@ namespace Tests
             hsm.AddState(1, state1);
             hsm.AddState(2, state2);
 
-            hsm.SetSubstateRelation(1, 2);
+            hsm.SetImmediateSubstateRelation(1, 2);
 
             hsm.RemoveState(1);
 
@@ -453,8 +474,8 @@ namespace Tests
             hsm.AddState(3, state3);
             hsm.AddState(4, state4);
 
-            hsm.SetSubstateRelation(1, 2);
-            hsm.SetSubstateRelation(3, 4);
+            hsm.SetImmediateSubstateRelation(1, 2);
+            hsm.SetImmediateSubstateRelation(3, 4);
 
             int[] roots = hsm.GetRoots();
 
@@ -473,7 +494,7 @@ namespace Tests
             hsm.AddState(1, state1);
             hsm.AddState(2, state2);
 
-            hsm.SetSubstateRelation(1, 2);
+            hsm.SetImmediateSubstateRelation(1, 2);
 
             hsm.RemoveState(1);
 
@@ -491,7 +512,7 @@ namespace Tests
             hsm.AddState(1, state1);
             hsm.AddState(2, state2);
 
-            hsm.SetSubstateRelation(1, 2);
+            hsm.SetImmediateSubstateRelation(1, 2);
 
             hsm.InitialState = 2;
 
@@ -511,7 +532,7 @@ namespace Tests
             hsm.AddState(2, state2);
             hsm.AddState(3, state3);
 
-            hsm.SetSubstateRelation(1, 2);
+            hsm.SetImmediateSubstateRelation(1, 2);
 
             hsm.InitialState = 1;
 
@@ -539,9 +560,9 @@ namespace Tests
             hsm.AddState(3, state3);
             hsm.AddState(4, state4);
 
-            hsm.SetSubstateRelation(1, 2);
-            hsm.SetSubstateRelation(2, 3);
-            hsm.SetSubstateRelation(3, 4);
+            hsm.SetImmediateSubstateRelation(1, 2);
+            hsm.SetImmediateSubstateRelation(2, 3);
+            hsm.SetImmediateSubstateRelation(3, 4);
 
             hsm.InitialState = 1;
 
@@ -570,11 +591,11 @@ namespace Tests
             hsm.Start();
 
             hsm.SetInitialStateTo(1, 2);
-            hsm.SetSubstateRelation(1, 2);
+            hsm.SetImmediateSubstateRelation(1, 2);
 
             state2.Received(1).Enter();
 
-            hsm.SetSubstateRelation(1, 3);
+            hsm.SetImmediateSubstateRelation(1, 3);
 
             state3.DidNotReceive().Enter();
         }
@@ -594,9 +615,9 @@ namespace Tests
             hsm.AddState(3, state3);
             hsm.AddState(4, state4);
 
-            hsm.SetSubstateRelation(1, 2);
-            hsm.SetSubstateRelation(1, 3);
-            hsm.SetSubstateRelation(2, 4);
+            hsm.SetImmediateSubstateRelation(1, 2);
+            hsm.SetImmediateSubstateRelation(1, 3);
+            hsm.SetImmediateSubstateRelation(2, 4);
 
             hsm.InitialState = 1;
 
@@ -612,6 +633,210 @@ namespace Tests
             state2.Received(1).Exit();
             state4.Received(1).Exit();
             state3.Received(1).Enter();
+        }
+
+        [Test]
+        public void ThrowAnExceptionIfUserTriesToAddChildStateWhileParentIsActiveAndChildIsNotInitialState()
+        {
+            HSM<int, int> hsm = new HSM<int, int>();
+
+            IState state1 = Substitute.For<IState>();
+            IState state2 = Substitute.For<IState>();
+
+            hsm.AddState(1, state1);
+            hsm.AddState(2, state2);
+
+            hsm.InitialState = 1;
+
+            hsm.Start();
+
+            Assert.Throws<InvalidOperationException>(() => hsm.SetImmediateSubstateRelation(1, 2));
+        }
+
+        [Test]
+        public void ThrowAnExceptionIfUserTriesToAddChildStateWhileParentIsActiveAndHasSomeInvalidInitialStateInHierarchyPath()
+        {
+            HSM<int, int> hsm = new HSM<int, int>();
+
+            IState state1 = Substitute.For<IState>();
+            IState state2 = Substitute.For<IState>();
+            IState state3 = Substitute.For<IState>();
+            IState state4 = Substitute.For<IState>();
+
+            hsm.AddState(1, state1);
+            hsm.AddState(2, state2);
+            hsm.AddState(3, state3);
+            hsm.AddState(4, state4);
+
+            hsm.InitialState = 1;
+
+            hsm.SetInitialStateTo(1, 2);
+            hsm.SetInitialStateTo(2, 3);
+
+            hsm.SetImmediateSubstateRelation(2, 3);
+            hsm.SetImmediateSubstateRelation(3, 4);
+
+            hsm.Start();
+
+            Assert.Throws<InvalidOperationException>(() => hsm.SetImmediateSubstateRelation(1, 2));
+
+            hsm.SetInitialStateTo(3, 4);
+
+            Assert.DoesNotThrow(() => hsm.SetImmediateSubstateRelation(1, 2));
+        }
+
+        [Test]
+        public void ThrowAnExceptionIfUserTriesToRemoveStateThatIsInTheActiveHierarchyPathAndSwitchToInitialStateIsInvalid()
+        {
+            HSM<int, int> hsm = new HSM<int, int>();
+
+            IState state1 = Substitute.For<IState>();
+            IState state2 = Substitute.For<IState>();
+            IState state3 = Substitute.For<IState>();
+            IState state4 = Substitute.For<IState>();
+
+            hsm.AddState(1, state1);
+            hsm.AddState(2, state2);
+            hsm.AddState(3, state3);
+            hsm.AddState(4, state4);
+
+            hsm.InitialState = 1;
+
+            hsm.SetInitialStateTo(1, 2);
+            hsm.SetInitialStateTo(2, 3);
+
+            hsm.SetImmediateSubstateRelation(1, 2);
+            hsm.SetImmediateSubstateRelation(2, 3);
+            hsm.SetImmediateSubstateRelation(2, 4);
+
+            hsm.Start();
+
+            hsm.SetInitialStateTo(2, 2);
+
+            Assert.Throws<InvalidOperationException>(() => hsm.RemoveState(3));
+            Assert.IsTrue(hsm.ContainsState(3));
+
+            hsm.SetInitialStateTo(2, 4);
+
+            Assert.DoesNotThrow(() => hsm.RemoveState(3));
+        }
+
+        [Test]
+        public void OnlyRemoveImmediateSubstateRelations()
+        {
+            HSM<int, int> hsm = new HSM<int, int>();
+
+            IState state1 = Substitute.For<IState>();
+            IState state2 = Substitute.For<IState>();
+            IState state3 = Substitute.For<IState>();
+
+            hsm.AddState(1, state1);
+            hsm.AddState(2, state2);
+            hsm.AddState(3, state3);
+
+            hsm.SetImmediateSubstateRelation(1, 2);
+            hsm.SetImmediateSubstateRelation(2, 3);
+
+            hsm.RemoveImmediateSubstateRelation(1, 3);
+
+            Assert.IsTrue(hsm.AreRelatives(1, 3));
+        }
+
+        [Test]
+        public void EnterActiveHierarchyPath()
+        {
+            HSM<int, int> hsm = new HSM<int, int>();
+
+            IState state1 = Substitute.For<IState>();
+            IState state2 = Substitute.For<IState>();
+            IState state3 = Substitute.For<IState>();
+
+            hsm.AddState(1, state1);
+            hsm.AddState(2, state2);
+            hsm.AddState(3, state3);
+
+            hsm.SetImmediateSubstateRelation(1, 2);
+            hsm.SetImmediateSubstateRelation(2, 3);
+
+            hsm.SetInitialStateTo(1, 2);
+            hsm.SetInitialStateTo(2, 3);
+
+            hsm.InitialState = 1;
+
+            hsm.Start();
+
+            Received.InOrder(() =>
+            {
+                state1.Enter();
+                state2.Enter();
+                state3.Enter();
+            });
+        }
+
+        [Test]
+        public void UpdateActiveHierarchyPath()
+        {
+            HSM<int, int> hsm = new HSM<int, int>();
+
+            IState state1 = Substitute.For<IState>();
+            IState state2 = Substitute.For<IState>();
+            IState state3 = Substitute.For<IState>();
+
+            hsm.AddState(1, state1);
+            hsm.AddState(2, state2);
+            hsm.AddState(3, state3);
+
+            hsm.SetImmediateSubstateRelation(1, 2);
+            hsm.SetImmediateSubstateRelation(2, 3);
+
+            hsm.SetInitialStateTo(1, 2);
+            hsm.SetInitialStateTo(2, 3);
+
+            hsm.InitialState = 1;
+
+            hsm.Start();
+
+            hsm.Update();
+
+            Received.InOrder(() =>
+            {
+                state1.Update();
+                state2.Update();
+                state3.Update();
+            });
+        }
+
+        [Test]
+        public void ExitActiveHierarchyPath()
+        {
+            HSM<int, int> hsm = new HSM<int, int>();
+
+            IState state1 = Substitute.For<IState>();
+            IState state2 = Substitute.For<IState>();
+            IState state3 = Substitute.For<IState>();
+
+            hsm.AddState(1, state1);
+            hsm.AddState(2, state2);
+            hsm.AddState(3, state3);
+
+            hsm.SetImmediateSubstateRelation(1, 2);
+            hsm.SetImmediateSubstateRelation(2, 3);
+
+            hsm.SetInitialStateTo(1, 2);
+            hsm.SetInitialStateTo(2, 3);
+
+            hsm.InitialState = 1;
+
+            hsm.Start();
+
+            hsm.Stop();
+
+            Received.InOrder(() =>
+            {
+                state3.Exit();
+                state2.Exit();
+                state1.Exit();
+            });
         }
     }
 }

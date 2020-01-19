@@ -89,7 +89,7 @@ namespace Paps.FSM.HSM
 
         public bool AreRelatives(TState superState, TState substate)
         {
-            return _stateHierarchy.ContainsSubstateRelation(superState, substate);
+            return _stateHierarchy.AreRelatives(superState, substate);
         }
 
         public bool ContainsTransition(Transition<TState, TTrigger> transition)
@@ -137,7 +137,7 @@ namespace Paps.FSM.HSM
             _stateHierarchy.RemoveState(stateId);
         }
 
-        public void RemoveSubstateRelation(TState superState, TState substate)
+        public void RemoveImmediateSubstateRelation(TState superState, TState substate)
         {
             _stateHierarchy.RemoveSubstateRelation(superState, substate);
         }
@@ -152,7 +152,7 @@ namespace Paps.FSM.HSM
             throw new System.NotImplementedException();
         }
 
-        public void SetSubstateRelation(TState superState, TState substate)
+        public void SetImmediateSubstateRelation(TState superState, TState substate)
         {
             _stateHierarchy.SetSubstateRelation(superState, substate);
         }
@@ -213,6 +213,11 @@ namespace Paps.FSM.HSM
         public TState[] GetRoots()
         {
             return _stateHierarchy.GetRoots();
+        }
+
+        public bool AreImmediateRelatives(TState parentState, TState substate)
+        {
+            return _stateHierarchy.AreImmediateRelatives(parentState, substate);
         }
 
         private class Comparer<T> : IEqualityComparer<T>

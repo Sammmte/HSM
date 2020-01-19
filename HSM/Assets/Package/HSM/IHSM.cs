@@ -40,10 +40,11 @@ namespace Paps.FSM.HSM
 
         bool SendEvent(IEvent messageEvent);
 
-        void SetSubstateRelation(TState parentState, TState substate);
-        void RemoveSubstateRelation(TState parentState, TState substate);
+        void SetImmediateSubstateRelation(TState parentState, TState substate);
+        void RemoveImmediateSubstateRelation(TState parentState, TState substate);
 
         bool AreRelatives(TState parentState, TState substate);
+        bool AreImmediateRelatives(TState parentState, TState substate);
 
         IEnumerable<TState> GetActiveHierarchyPath();
 

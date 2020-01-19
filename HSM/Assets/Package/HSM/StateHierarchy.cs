@@ -80,8 +80,26 @@ namespace Paps.FSM.HSM
 
         private void ValidateCanRemoveState(TState stateId)
         {
+            ValidateIsNotActiveRoot(stateId);
+        }
+
+        private void ValidateIsNotActiveRoot(TState stateId)
+        {
             if (IsInActiveHierarchyPath(stateId) && IsHierarchyRoot(stateId))
                 throw new InvalidOperationException("Cannot remove state because it is the root of the active hierarchy path");
+        }
+
+        private void ValidateSwitchToInitialStateIfIsAnActiveState(TState stateId)
+        {
+            if (IsInActiveHierarchyPath(stateId))
+            {
+                var node = _states[stateId];
+
+                if(node.IsValidInitialStateRecursively() == false || _stateComparer.Equals(node.InitialState, stateId))
+                {
+                    throw new InvalidOperationException("Cannot remove state because a switch to the initial state would be invalid");
+                }
+            }
         }
 
         public bool ContainsState(TState stateId)
@@ -114,19 +132,30 @@ namespace Paps.FSM.HSM
 
         public bool RemoveSubstateRelation(TState parent, TState child)
         {
-            if(ContainsSubstateRelation(parent, child))
+            if(ContainsState(parent) && ContainsState(child))
             {
                 var parentNode = _states[parent];
-                var childNode = parentNode.GetImmediateChild(child);
 
-                parentNode.RemoveChild(child);
+                if (parentNode.ContainsImmediateChild(child))
+                {
+                    ValidateCanRemoveSubstateRelation(parent, child);
 
-                _hierarchies.Add(childNode.StateId, childNode);
+                    var childNode = parentNode.GetImmediateChild(child);
 
-                return true;
+                    parentNode.RemoveChild(child);
+
+                    _hierarchies.Add(childNode.StateId, childNode);
+
+                    return true;
+                }
             }
 
             return false;
+        }
+
+        private void ValidateCanRemoveSubstateRelation(TState parent, TState child)
+        {
+            ValidateSwitchToInitialStateIfIsAnActiveState(parent);
         }
 
         private void ValidateCanSetSubstateRelation(TState parent, TState child)
@@ -136,6 +165,24 @@ namespace Paps.FSM.HSM
             ValidateHasNoParent(child);
             ValidateParentAndChildAreNotTheSame(parent, child);
             ValidateChildIsNotGrandfather(parent, child);
+            ValidateNewChildIsInitialStateIfParentIsActiveAndHasNoChild(parent, child);
+            ValidateNewChildHasValidInitialStatesInHierarchyPathIfParentIsActiveAndHasNoChild(parent, child);
+        }
+
+        private void ValidateNewChildHasValidInitialStatesInHierarchyPathIfParentIsActiveAndHasNoChild(TState parent, TState child)
+        {
+            var parentNode = _states[parent];
+
+            if (parentNode.IsActive && parentNode.ChildCount == 0 && (_states[child].IsValidInitialStateRecursively() == false))
+                throw new InvalidOperationException("Cannot add child state because parent is active and child has an invalid state in the hierarchy");
+        }
+
+        private void ValidateNewChildIsInitialStateIfParentIsActiveAndHasNoChild(TState parent, TState child)
+        {
+            var parentNode = _states[parent];
+
+            if(parentNode.IsActive && parentNode.ChildCount == 0 && _stateComparer.Equals(parentNode.InitialState, child) == false)
+                throw new InvalidOperationException("Cannot add child state because parent is active and child is not initial state");
         }
 
         private void ValidateHasNoParent(TState child)
@@ -154,15 +201,25 @@ namespace Paps.FSM.HSM
 
         private void ValidateChildIsNotGrandfather(TState parent, TState child)
         {
-            if(ContainsSubstateRelation(child, parent))
+            if(AreRelatives(child, parent))
                 throw new InvalidSubstateRelationException("Child cannot be parent's parent");
         }
 
-        public bool ContainsSubstateRelation(TState parent, TState child)
+        public bool AreRelatives(TState parent, TState child)
         {
             if(ContainsState(parent) && ContainsState(child))
             {
                 return _states[parent].ContainsChild(child);
+            }
+
+            return false;
+        }
+
+        public bool AreImmediateRelatives(TState parent, TState child)
+        {
+            if (ContainsState(parent) && ContainsState(child))
+            {
+                return _states[parent].ContainsImmediateChild(child);
             }
 
             return false;
@@ -247,12 +304,12 @@ namespace Paps.FSM.HSM
             if (IsHierarchyRoot(InitialState) == false)
                 throw new InvalidInitialStateException("Initial state is not root");
 
-            ValidateInitialStateOfRootNode();
+            ValidateInitialStatesOfState(InitialState);
         }
 
-        private void ValidateInitialStateOfRootNode()
+        private void ValidateInitialStatesOfState(TState stateId)
         {
-            if (_states[InitialState].IsValidInitialStateRecursively() == false) throw new InvalidInitialStateException();
+            if (_states[stateId].IsValidInitialStateRecursively() == false) throw new InvalidInitialStateException();
         }
 
         private void ValidateIsStarted()
