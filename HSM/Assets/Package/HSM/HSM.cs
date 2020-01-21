@@ -32,6 +32,7 @@ namespace Paps.FSM.HSM
         private Comparer<TTrigger> _triggerComparer;
 
         private StateHierarchy<TState> _stateHierarchy;
+        private TransitionManager<TState, TTrigger> _transitionManager;
 
         public HSM(IEqualityComparer<TState> stateComparer, IEqualityComparer<TTrigger> triggerComparer)
         {
@@ -45,6 +46,8 @@ namespace Paps.FSM.HSM
             SetTriggerComparer(triggerComparer);
 
             _stateHierarchy = new StateHierarchy<TState>(_stateComparer);
+            _transitionManager =
+                new TransitionManager<TState, TTrigger>(_stateHierarchy, _stateComparer, _triggerComparer);
         }
 
         public HSM() : this(EqualityComparer<TState>.Default, EqualityComparer<TTrigger>.Default)

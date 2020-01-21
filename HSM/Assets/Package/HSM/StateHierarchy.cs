@@ -10,7 +10,7 @@ namespace Paps.FSM.HSM
 
         public int RootCount => _hierarchies.Count;
 
-        private IEqualityComparer<TState> _stateComparer;
+        private StateEqualityComparer _stateComparer;
         private Dictionary<TState, StateHierarchyNode<TState>> _states;
         private Dictionary<TState, StateHierarchyNode<TState>> _hierarchies;
         private StateHierarchyNode<TState> _currentHierarchyRootNode;
@@ -21,7 +21,7 @@ namespace Paps.FSM.HSM
 
         public StateHierarchy(IEqualityComparer<TState> stateComparer)
         {
-            _stateComparer = stateComparer ?? EqualityComparer<TState>.Default;
+            _stateComparer = new StateEqualityComparer(stateComparer ?? EqualityComparer<TState>.Default);
             _states = new Dictionary<TState, StateHierarchyNode<TState>>(_stateComparer);
             _hierarchies = new Dictionary<TState, StateHierarchyNode<TState>>(_stateComparer);
         }
@@ -29,6 +29,11 @@ namespace Paps.FSM.HSM
         public StateHierarchy() : this(EqualityComparer<TState>.Default)
         {
 
+        }
+
+        public void SetStateComparer(IEqualityComparer<TState> stateComparer)
+        {
+            _stateComparer.StateComparer = stateComparer;
         }
 
         public void AddState(TState stateId, IState state)
@@ -267,7 +272,7 @@ namespace Paps.FSM.HSM
             }
         }
         
-        private bool IsValidSwitch(TState stateId)
+        public bool IsValidSwitch(TState stateId)
         {
             if(ContainsState(stateId))
             {
@@ -441,6 +446,26 @@ namespace Paps.FSM.HSM
         private bool IsInActiveHierarchyPath(TState stateId)
         {
             return _states[stateId].IsActive;
+        }
+
+        private class StateEqualityComparer : IEqualityComparer<TState>
+        {
+            public IEqualityComparer<TState> StateComparer;
+            
+            public StateEqualityComparer(IEqualityComparer<TState> stateComparer)
+            {
+                StateComparer = stateComparer;
+            }
+            
+            public bool Equals(TState x, TState y)
+            {
+                return StateComparer.Equals(x, y);
+            }
+
+            public int GetHashCode(TState obj)
+            {
+                return StateComparer.GetHashCode(obj);
+            }
         }
     }
 }
