@@ -632,6 +632,7 @@ namespace Tests
             state2.Received(1).Exit();
             state4.Received(1).Exit();
             state3.Received(1).Enter();
+            Assert.IsNull(hsm.GetParentOf(4));
         }
 
         [Test]
