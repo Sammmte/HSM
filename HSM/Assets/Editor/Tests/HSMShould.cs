@@ -334,10 +334,9 @@ namespace Tests
 
             hsm.SetImmediateSubstateRelation(1, 2);
             hsm.SetImmediateSubstateRelation(2, 3);
-
-            Assert.IsTrue(hsm.AreImmediateRelatives(1, 2));
-            Assert.IsTrue(hsm.AreImmediateRelatives(2, 3));
-            Assert.IsFalse(hsm.AreImmediateRelatives(1, 3));
+            
+            Assert.IsTrue(hsm.GetParentOf(2) == 1);
+            Assert.IsTrue(hsm.GetParentOf(3) == 2);
         }
 
         [Test]

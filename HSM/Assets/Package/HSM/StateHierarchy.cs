@@ -68,9 +68,11 @@ namespace Paps.FSM.HSM
                 }
                 else
                 {
-                    foreach (var child in node.Childs.Values)
+                    var childNodes = node.Childs.Values.ToArray();
+
+                    for (int i = 0; i < childNodes.Length; i++)
                     {
-                        RemoveSubstateRelation(stateId, child.StateId);
+                        RemoveSubstateRelation(stateId, childNodes[i].StateId);
                     }
                 }
 
@@ -166,22 +168,19 @@ namespace Paps.FSM.HSM
 
         private void RemoveChildFrom(StateHierarchyNode parent, StateHierarchyNode child)
         {
-            if (parent.Childs.ContainsKey(child.StateId))
+            if (parent.ActiveChild != null && _stateComparer.Equals(parent.ActiveChild.StateId, child.StateId))
             {
-                if (parent.ActiveChild != null && _stateComparer.Equals(parent.ActiveChild.StateId, child.StateId))
-                {
-                    ExitState(parent.ActiveChild);
-                    parent.ActiveChild.Parent = null;
+                ExitState(parent.ActiveChild);
+                parent.ActiveChild.Parent = null;
 
-                    parent.ActiveChild = null;
-                }
+                parent.ActiveChild = null;
+            }
 
-                parent.Childs.Remove(child.StateId);
+            parent.Childs.Remove(child.StateId);
                 
-                if (parent.Childs.Count > 0)
-                {
-                    EnterInitialChildOf(parent);
-                }
+            if (parent.Childs.Count > 0)
+            {
+                EnterInitialChildOf(parent);
             }
         }
 

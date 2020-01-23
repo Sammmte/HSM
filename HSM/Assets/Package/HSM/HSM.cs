@@ -218,11 +218,6 @@ namespace Paps.FSM.HSM
             return _stateHierarchy.GetRoots();
         }
 
-        public bool AreImmediateRelatives(TState parentState, TState substate)
-        {
-            return _stateHierarchy.AreImmediateRelatives(parentState, substate);
-        }
-
         private class Comparer<T> : IEqualityComparer<T>
         {
             public IEqualityComparer<T> EqualityComparer;

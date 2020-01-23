@@ -44,7 +44,6 @@ namespace Paps.FSM.HSM
         void RemoveImmediateSubstateRelation(TState parentState, TState substate);
 
         bool AreRelatives(TState parentState, TState substate);
-        bool AreImmediateRelatives(TState parentState, TState substate);
 
         IEnumerable<TState> GetActiveHierarchyPath();
 
