@@ -111,15 +111,10 @@ namespace Paps.FSM.HSM
         {
             if (IsValidNodeInitialState(node))
             {
-                foreach (var child in node.Childs.Values)
-                {
-                    if (IsValidNodeInitialStateRecursively(child) == false)
-                    {
-                        return false;
-                    }
-                }
-
-                return true;
+                if (node.Childs.ContainsKey(node.InitialState))
+                    return IsValidNodeInitialStateRecursively(_states[node.InitialState]);
+                else
+                    return true;
             }
 
             return false;
@@ -127,7 +122,7 @@ namespace Paps.FSM.HSM
 
         private bool IsValidNodeInitialState(StateHierarchyNode node)
         {
-            return (node.Childs.Count > 0 && node.Childs.ContainsKey(InitialState)) || node.Childs.Count == 0;
+            return (node.Childs.Count > 0 && node.Childs.ContainsKey(node.InitialState)) || node.Childs.Count == 0;
         }
 
         public bool ContainsState(TState stateId)
@@ -171,15 +166,18 @@ namespace Paps.FSM.HSM
 
         private void RemoveChildFrom(StateHierarchyNode parent, StateHierarchyNode child)
         {
-            if (parent.ActiveChild != null && _stateComparer.Equals(parent.ActiveChild.StateId, child.StateId))
+            if (parent.Childs.ContainsKey(child.StateId))
             {
-                ExitState(parent.ActiveChild);
-                parent.ActiveChild.Parent = null;
+                if (parent.ActiveChild != null && _stateComparer.Equals(parent.ActiveChild.StateId, child.StateId))
+                {
+                    ExitState(parent.ActiveChild);
+                    parent.ActiveChild.Parent = null;
 
-                parent.ActiveChild = null;
+                    parent.ActiveChild = null;
+                }
 
                 parent.Childs.Remove(child.StateId);
-
+                
                 if (parent.Childs.Count > 0)
                 {
                     EnterInitialChildOf(parent);
@@ -328,8 +326,8 @@ namespace Paps.FSM.HSM
                     ValidateCanRemoveSubstateRelation(parent, child);
 
                     var childNode = parentNode.Childs[child];
-
-                    parentNode.RemoveChild(child);
+                    
+                    RemoveChildFrom(parentNode, childNode);
 
                     _roots.Add(childNode.StateId, childNode);
 
@@ -349,7 +347,7 @@ namespace Paps.FSM.HSM
         {
             var parentNode = _states[parent];
 
-            if (parentNode.IsActive && parentNode.ChildCount == 0 && (_states[child].IsValidInitialStateRecursively() == false))
+            if (parentNode.IsActive && parentNode.Childs.Count == 0 && IsValidNodeInitialStateRecursively(_states[child]) == false)
                 throw new InvalidOperationException("Cannot add child state because parent is active and child has an invalid state in the hierarchy");
         }
 
@@ -357,7 +355,7 @@ namespace Paps.FSM.HSM
         {
             var parentNode = _states[parent];
 
-            if(parentNode.IsActive && parentNode.ChildCount == 0 && _stateComparer.Equals(parentNode.InitialState, child) == false)
+            if(parentNode.IsActive && parentNode.Childs.Count == 0 && _stateComparer.Equals(parentNode.InitialState, child) == false)
                 throw new InvalidOperationException("Cannot add child state because parent is active and child is not initial state");
         }
 
@@ -381,11 +379,27 @@ namespace Paps.FSM.HSM
                 throw new InvalidSubstateRelationException("Child cannot be parent's parent");
         }
 
+        private bool ContainsChildRecursively(StateHierarchyNode parentNode, TState child)
+        {
+            if (parentNode.Childs.ContainsKey(child) == false)
+            {
+                foreach (var childNode in parentNode.Childs.Values)
+                {
+                    if (ContainsChildRecursively(childNode, child))
+                        return true;
+                }
+
+                return false;
+            }
+
+            return true;
+        }
+
         public bool AreRelatives(TState parent, TState child)
         {
             if(ContainsState(parent) && ContainsState(child))
             {
-                return _states[parent].ContainsChild(child);
+                return ContainsChildRecursively(_states[parent], child);
             }
 
             return false;
@@ -395,7 +409,7 @@ namespace Paps.FSM.HSM
         {
             if (ContainsState(parent) && ContainsState(child))
             {
-                return _states[parent].ContainsImmediateChild(child);
+                return _states[parent].Childs.ContainsKey(child);
             }
 
             return false;
@@ -420,27 +434,7 @@ namespace Paps.FSM.HSM
         {
             ValidateIsStarted();
 
-            if(IsValidSwitch(stateId))
-            {
-                if(IsHierarchyRoot(stateId))
-                {
-                    _currentHierarchyRootNode.Exit();
-
-                    _currentHierarchyRootNode = _states[stateId];
-
-                    _currentHierarchyRootNode.Enter();
-                }
-                else
-                {
-                    var previous = _states[stateId];
-
-                    previous.Exit();
-
-                    var next = previous.Parent.GetImmediateChild(stateId);
-
-                    next.Enter();
-                }
-            }
+            
         }
         
         public bool IsValidSwitch(TState stateId)
@@ -485,7 +479,7 @@ namespace Paps.FSM.HSM
 
         private void ValidateInitialStatesOfState(TState stateId)
         {
-            if (_states[stateId].IsValidInitialStateRecursively() == false) throw new InvalidInitialStateException();
+            if (IsValidNodeInitialStateRecursively(_states[stateId]) == false) throw new InvalidInitialStateException();
         }
 
         private void ValidateIsStarted()
@@ -506,15 +500,27 @@ namespace Paps.FSM.HSM
             IsStarted = true;
 
             _currentHierarchyRootNode = _states[InitialState];
-
-            _currentHierarchyRootNode.Enter();
+            
+            EnterState(_currentHierarchyRootNode);
         }
 
         public void Update()
         {
             ValidateIsStarted();
 
-            _currentHierarchyRootNode.Update();
+            UpdateState(_currentHierarchyRootNode);
+        }
+
+        private void UpdateState(StateHierarchyNode begin)
+        {
+            var node = begin;
+
+            while (node != null)
+            {
+                node.StateObject.Update();
+
+                node = node.ActiveChild;
+            }
         }
 
         public void Stop()
@@ -523,7 +529,7 @@ namespace Paps.FSM.HSM
             {
                 try
                 {
-                    _currentHierarchyRootNode.Exit();
+                    ExitState(_currentHierarchyRootNode);
 
                     IsStarted = false;
 
@@ -586,9 +592,9 @@ namespace Paps.FSM.HSM
 
             var node = _states[parent];
 
-            if(node.ChildCount > 0)
+            if(node.Childs.Count > 0)
             {
-                return ToArray(node.GetImmediateChilds());
+                return node.Childs.Keys.ToArray();
             }
 
             return null;
