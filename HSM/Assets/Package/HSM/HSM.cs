@@ -3,7 +3,7 @@ using System;
 
 namespace Paps.FSM.HSM
 {
-    public class HSM<TState, TTrigger> : IHSM<TState, TTrigger>, IHSMWithGuardConditions<TState, TTrigger>
+    public class HSM<TState, TTrigger> : IHierarchicalFSM<TState, TTrigger>, IFSMStartable<TState, TTrigger>, IFSMUpdatable<TState, TTrigger>
     {
         public int StateCount => _stateHierarchy.StateCount;
 
@@ -216,6 +216,26 @@ namespace Paps.FSM.HSM
         public TState[] GetRoots()
         {
             return _stateHierarchy.GetRoots();
+        }
+
+        public void SubscribeEventHandlerTo(TState stateId, IStateEventHandler eventHandler)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void UnsubscribeEventHandlerFrom(TState stateId, IStateEventHandler eventHandler)
+        {
+            throw new NotImplementedException();
+        }
+
+        public bool HasEventHandler(TState stateId, IStateEventHandler eventHandler)
+        {
+            throw new NotImplementedException();
+        }
+
+        public bool HasEventListener(TState stateId)
+        {
+            throw new NotImplementedException();
         }
 
         private class Comparer<T> : IEqualityComparer<T>
