@@ -142,7 +142,7 @@ namespace Paps.FSM.HSM
 
         public void RemoveImmediateSubstateRelation(TState superState, TState substate)
         {
-            _stateHierarchy.RemoveSubstateRelation(superState, substate);
+            _stateHierarchy.RemoveImmediateSubstateRelation(superState, substate);
         }
 
         public void RemoveTransition(Transition<TState, TTrigger> transition)
@@ -157,7 +157,7 @@ namespace Paps.FSM.HSM
 
         public void SetImmediateSubstateRelation(TState superState, TState substate)
         {
-            _stateHierarchy.SetSubstateRelation(superState, substate);
+            _stateHierarchy.SetImmediateSubstateRelation(superState, substate);
         }
 
         public void Start()
@@ -198,9 +198,9 @@ namespace Paps.FSM.HSM
             _stateHierarchy.Update();
         }
 
-        public TState[] GetChildsOf(TState parent)
+        public TState[] GetImmediateChildsOf(TState parent)
         {
-            return _stateHierarchy.GetChildsOf(parent);
+            return _stateHierarchy.GetImmediateChildsOf(parent);
         }
 
         public TState GetParentOf(TState child)

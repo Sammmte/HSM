@@ -10,7 +10,7 @@ namespace Paps.FSM.HSM
 
         public int RootCount => _roots.Count;
 
-        private StateEqualityComparer _stateComparer;
+        private IEqualityComparer<TState> _stateComparer;
         private Dictionary<TState, StateHierarchyNode> _states;
         private Dictionary<TState, StateHierarchyNode> _roots;
         private StateHierarchyNode _currentHierarchyRootNode;
@@ -22,7 +22,7 @@ namespace Paps.FSM.HSM
 
         public StateHierarchy(IEqualityComparer<TState> stateComparer)
         {
-            _stateComparer = new StateEqualityComparer(stateComparer ?? EqualityComparer<TState>.Default);
+            _stateComparer = stateComparer ?? EqualityComparer<TState>.Default;
             _states = new Dictionary<TState, StateHierarchyNode>(_stateComparer);
             _roots = new Dictionary<TState, StateHierarchyNode>(_stateComparer);
             _eventExceptionList = new List<Exception>();
@@ -33,13 +33,9 @@ namespace Paps.FSM.HSM
 
         }
 
-        public void SetStateComparer(IEqualityComparer<TState> stateComparer)
-        {
-            _stateComparer.StateComparer = stateComparer;
-        }
-
         public void AddState(TState stateId, IState state)
         {
+            ValidateStateObjectIsNotNull(state);
             ValidateCanAddState(stateId, state);
 
             var stateNode = new StateHierarchyNode(stateId, state, _stateComparer);
@@ -47,6 +43,11 @@ namespace Paps.FSM.HSM
             _states.Add(stateId, stateNode);
 
             _roots.Add(stateId, stateNode);
+        }
+
+        private void ValidateStateObjectIsNotNull(IState state)
+        {
+            if (state == null) throw new ArgumentNullException(nameof(state));
         }
 
         private void ValidateCanAddState(TState stateId, IState state)
@@ -64,7 +65,7 @@ namespace Paps.FSM.HSM
 
                 if (node.Parent != null)
                 {
-                    RemoveSubstateRelation(node.Parent.StateId, stateId);
+                    RemoveImmediateSubstateRelation(node.Parent.StateId, stateId);
                 }
                 else
                 {
@@ -72,7 +73,7 @@ namespace Paps.FSM.HSM
 
                     for (int i = 0; i < childNodes.Length; i++)
                     {
-                        RemoveSubstateRelation(stateId, childNodes[i].StateId);
+                        RemoveImmediateSubstateRelation(stateId, childNodes[i].StateId);
                     }
                 }
 
@@ -144,8 +145,13 @@ namespace Paps.FSM.HSM
             return _states[id].StateObject;
         }
 
-        public void SetSubstateRelation(TState parent, TState child)
+        public void SetImmediateSubstateRelation(TState parent, TState child)
         {
+            ValidateContainsStateId(parent);
+            ValidateContainsStateId(child);
+
+            if (AreImmediateRelatives(parent, child)) return;
+
             ValidateCanSetSubstateRelation(parent, child);
 
             var childNode = _states[child];
@@ -305,8 +311,6 @@ namespace Paps.FSM.HSM
 
         private void ValidateCanSetSubstateRelation(TState parent, TState child)
         {
-            ValidateContainsStateId(parent);
-            ValidateContainsStateId(child);
             ValidateHasNoParent(child);
             ValidateParentAndChildAreNotTheSame(parent, child);
             ValidateChildIsNotGrandfather(parent, child);
@@ -314,7 +318,7 @@ namespace Paps.FSM.HSM
             ValidateNewChildHasValidInitialStatesInHierarchyPathIfParentIsActiveAndHasNoChild(parent, child);
         }
 
-        public bool RemoveSubstateRelation(TState parent, TState child)
+        public bool RemoveImmediateSubstateRelation(TState parent, TState child)
         {
             if(ContainsState(parent) && ContainsState(child))
             {
@@ -494,6 +498,7 @@ namespace Paps.FSM.HSM
         public void Start()
         {
             ValidateIsNotStarted();
+            ValidateIsNotEmpty();
             ValidateInitialStates();
 
             IsStarted = true;
@@ -501,6 +506,11 @@ namespace Paps.FSM.HSM
             _currentHierarchyRootNode = _states[InitialState];
             
             EnterState(_currentHierarchyRootNode);
+        }
+
+        private void ValidateIsNotEmpty()
+        {
+            if (_states.Count == 0) throw new EmptyStateMachineException("Cannot start because state machine has no states");
         }
 
         public void Update()
@@ -585,7 +595,7 @@ namespace Paps.FSM.HSM
             }
         }
 
-        public TState[] GetChildsOf(TState parent)
+        public TState[] GetImmediateChildsOf(TState parent)
         {
             ValidateContainsStateId(parent);
 
@@ -643,26 +653,6 @@ namespace Paps.FSM.HSM
                 StateObject = stateObject;
 
                 Childs = new Dictionary<TState, StateHierarchyNode>(stateComparer ?? EqualityComparer<TState>.Default);
-            }
-        }
-
-        private class StateEqualityComparer : IEqualityComparer<TState>
-        {
-            public IEqualityComparer<TState> StateComparer;
-            
-            public StateEqualityComparer(IEqualityComparer<TState> stateComparer)
-            {
-                StateComparer = stateComparer;
-            }
-            
-            public bool Equals(TState x, TState y)
-            {
-                return StateComparer.Equals(x, y);
-            }
-
-            public int GetHashCode(TState obj)
-            {
-                return StateComparer.GetHashCode(obj);
             }
         }
     }

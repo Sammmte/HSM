@@ -4,13 +4,14 @@ using Paps.FSM;
 using Paps.FSM.HSM;
 using System.Linq;
 using System;
+using Paps.FSM.Extensions;
 
 namespace Tests
 {
     public class HSMShould
     {
         [Test]
-        public void AddStates()
+        public void Add_States()
         {
             HSM<int, int> hsm = new HSM<int, int>();
 
@@ -18,17 +19,299 @@ namespace Tests
             IState state2 = Substitute.For<IState>();
 
             Assert.IsTrue(hsm.StateCount == 0);
+            Assert.IsFalse(hsm.ContainsState(1));
 
             hsm.AddState(1, state1);
 
             Assert.IsTrue(hsm.StateCount == 1);
+            Assert.IsTrue(hsm.ContainsState(1));
+            Assert.IsTrue(hsm.GetStates().Contains(1));
+            Assert.IsTrue(hsm.GetStateById(1) == state1);
 
             hsm.AddState(2, state2);
 
             Assert.IsTrue(hsm.StateCount == 2);
+            Assert.IsTrue(hsm.ContainsState(1));
+            Assert.IsTrue(hsm.ContainsState(2));
+            Assert.IsTrue(hsm.GetStates().Contains(1));
+            Assert.IsTrue(hsm.GetStates().Contains(2));
+            Assert.IsTrue(hsm.GetStateById(2) == state2);
         }
 
         [Test]
+        public void Throw_An_Exception_If_User_Tries_To_Add_The_Same_State_Id_Twice()
+        {
+            HSM<int, int> hsm = new HSM<int, int>();
+
+            IState state1 = Substitute.For<IState>();
+            IState state2 = Substitute.For<IState>();
+
+            hsm.AddState(1, state1);
+
+            Assert.Throws<StateIdAlreadyAddedException>(() => hsm.AddState(1, state1));
+            Assert.Throws<StateIdAlreadyAddedException>(() => hsm.AddState(1, state2));
+        }
+
+        [Test]
+        public void Throw_An_Exception_If_User_Tries_To_Add_Null_State_Object()
+        {
+            HSM<int, int> hsm = new HSM<int, int>();
+
+            Assert.Throws<ArgumentNullException>(() => hsm.AddState(1, null));
+        }
+
+        [Test]
+        public void Throw_An_Exception_If_State_Id_Type_Is_Reference_Type_And_User_Tries_To_Add_A_Null_State_Id()
+        {
+            HSM<object, int> hsm = new HSM<object, int>();
+
+            IState state1 = Substitute.For<IState>();
+
+            Assert.Throws<ArgumentNullException>(() => hsm.AddState(null, state1));
+        }
+
+        [Test]
+        public void Set_Substate_Relations()
+        {
+            HSM<int, int> hsm = new HSM<int, int>();
+
+            IState state1 = Substitute.For<IState>();
+            IState state2 = Substitute.For<IState>();
+
+            hsm.AddState(1, state1);
+            hsm.AddState(2, state2);
+
+            hsm.SetImmediateSubstateRelation(1, 2);
+
+            Assert.IsTrue(hsm.GetParentOf(2) == 1);
+            Assert.IsTrue(hsm.GetRoots().Contains(1));
+            Assert.IsFalse(hsm.GetRoots().Contains(2));
+            Assert.IsTrue(hsm.GetImmediateChildsOf(1).Contains(2));
+            Assert.IsTrue(hsm.AreRelatives(1, 2));
+        }
+
+        [Test]
+        public void Set_Substate_Relations_Between_Two_Roots_Having_Childs_Any_Of_Them()
+        {
+            HSM<int, int> hsm = new HSM<int, int>();
+
+            IState state1 = Substitute.For<IState>();
+            IState state2 = Substitute.For<IState>();
+            IState state3 = Substitute.For<IState>();
+
+            hsm.AddState(1, state1);
+            hsm.AddState(2, state2);
+            hsm.AddState(3, state3);
+
+            hsm.SetImmediateSubstateRelation(1, 2);
+
+            hsm.SetImmediateSubstateRelation(3, 1);
+
+            Assert.IsTrue(hsm.GetParentOf(1) == 3);
+            Assert.IsTrue(hsm.GetRoots().Contains(3));
+            Assert.IsFalse(hsm.GetRoots().Contains(1));
+            Assert.IsTrue(hsm.GetImmediateChildsOf(3).Contains(1));
+            Assert.IsTrue(hsm.GetImmediateChildsOf(1).Contains(2));
+            Assert.IsTrue(hsm.AreRelatives(1, 2));
+            Assert.IsTrue(hsm.AreRelatives(3, 1));
+            Assert.IsTrue(hsm.AreRelatives(3, 2));
+        }
+
+        [Test]
+        public void Throw_An_Exception_If_User_Tries_To_Set_Substate_Relation_Between_Two_States_That_Were_Not_Added()
+        {
+            HSM<int, int> hsm = new HSM<int, int>();
+
+            Assert.Throws<StateIdNotAddedException>(() => hsm.SetImmediateSubstateRelation(1, 2));
+
+            IState state = Substitute.For<IState>();
+
+            hsm.AddState(1, state);
+
+            Assert.Throws<StateIdNotAddedException>(() => hsm.SetImmediateSubstateRelation(1, 2));
+
+            hsm = new HSM<int, int>();
+
+            hsm.AddState(2, state);
+
+            Assert.Throws<StateIdNotAddedException>(() => hsm.SetImmediateSubstateRelation(1, 2));
+        }
+
+        [Test]
+        public void Throw_An_Exception_If_User_Tries_To_Set_Substate_Relation_And_Super_State_Is_Equals_To_Substate()
+        {
+            HSM<int, int> hsm = new HSM<int, int>();
+
+            IState state1 = Substitute.For<IState>();
+
+            hsm.AddState(1, state1);
+
+            Assert.Throws<InvalidSubstateRelationException>(() => hsm.SetImmediateSubstateRelation(1, 1));
+        }
+
+        [Test]
+        public void Throw_An_Exception_If_User_Tries_To_Set_Substate_Relation_And_Substate_Is_Parent_Or_Grandfather_Of_SuperState()
+        {
+            HSM<int, int> hsm = new HSM<int, int>();
+
+            IState state1 = Substitute.For<IState>();
+            IState state2 = Substitute.For<IState>();
+            IState state3 = Substitute.For<IState>();
+
+            hsm.AddState(1, state1);
+            hsm.AddState(2, state2);
+            hsm.AddState(3, state3);
+
+            hsm.SetImmediateSubstateRelation(1, 2);
+
+            Assert.Throws<InvalidSubstateRelationException>(() => hsm.SetImmediateSubstateRelation(2, 1));
+
+            hsm.SetImmediateSubstateRelation(2, 3);
+
+            Assert.Throws<InvalidSubstateRelationException>(() => hsm.SetImmediateSubstateRelation(3, 1));
+        }
+
+        [Test]
+        public void Throw_An_Exception_If_User_Tries_To_Set_Substate_Relation_With_Substate_Having_A_Parent()
+        {
+            HSM<int, int> hsm = new HSM<int, int>();
+
+            IState state1 = Substitute.For<IState>();
+            IState state2 = Substitute.For<IState>();
+            IState state3 = Substitute.For<IState>();
+
+            hsm.AddState(1, state1);
+            hsm.AddState(2, state2);
+            hsm.AddState(3, state3);
+
+            hsm.SetImmediateSubstateRelation(1, 2);
+
+            Assert.Throws<InvalidSubstateRelationException>(() => hsm.SetImmediateSubstateRelation(3, 2));
+        }
+
+        [Test]
+        public void Do_Nothing_If_User_Tries_To_Set_An_Already_Exiting_Substate_Relation()
+        {
+            HSM<int, int> hsm = new HSM<int, int>();
+
+            IState state1 = Substitute.For<IState>();
+            IState state2 = Substitute.For<IState>();
+
+            hsm.AddState(1, state1);
+            hsm.AddState(2, state2);
+
+            hsm.SetImmediateSubstateRelation(1, 2);
+
+            Assert.DoesNotThrow(() => hsm.SetImmediateSubstateRelation(1, 2));
+        }
+
+        [Test]
+        public void Start_And_Enter_Initial_Hierarchy_Path()
+        {
+            HSM<int, int> hsm = new HSM<int, int>();
+
+            IState state1 = Substitute.For<IState>();
+            IState state2 = Substitute.For<IState>();
+            IState state3 = Substitute.For<IState>();
+
+            hsm.AddState(1, state1);
+            hsm.AddState(2, state2);
+            hsm.AddState(3, state3);
+
+            hsm.SetImmediateSubstateRelation(1, 2);
+
+            hsm.InitialState = 1;
+
+            hsm.SetInitialStateTo(1, 2);
+
+            hsm.Start();
+
+            Assert.IsTrue(hsm.IsStarted);
+
+            state1.Received(1).Enter();
+            state2.Received(1).Enter();
+
+            state3.DidNotReceive().Enter();
+        }
+
+        [Test]
+        public void Throw_An_Exception_If_Is_Empty_When_Started()
+        {
+            HSM<int, int> hsm = new HSM<int, int>();
+
+            Assert.Throws<EmptyStateMachineException>(() => hsm.Start());
+        }
+
+        [Test]
+        public void Throw_An_Exception_If_Does_Not_Contains_InitialState_When_Started()
+        {
+            HSM<int, int> hsm = new HSM<int, int>();
+
+            IState state1 = Substitute.For<IState>();
+
+            hsm.AddState(1, state1);
+
+            Assert.Throws<InvalidInitialStateException>(() => hsm.Start());
+        }
+
+        [Test]
+        public void Throw_An_Exception_If_User_Tries_To_Start_It_Twice_Without_Been_Stopped()
+        {
+            HSM<int, int> hsm = new HSM<int, int>();
+
+            IState state1 = Substitute.For<IState>();
+
+            hsm.AddState(1, state1);
+
+            hsm.InitialState = 1;
+
+            hsm.Start();
+
+            Assert.Throws<StateMachineStartedException>(() => hsm.Start());
+        }
+
+        [Test]
+        public void Throw_An_Exception_If_Any_State_In_Initial_Active_Hierarchy_Path_Has_Non_Exiting_Initial_State()
+        {
+            var hsm = new HSM<int, int>();
+
+            IState state1 = Substitute.For<IState>();
+            IState state2 = Substitute.For<IState>();
+            IState state3 = Substitute.For<IState>();
+
+            hsm.AddState(1, state1);
+            hsm.AddState(2, state2);
+            hsm.AddState(3, state3);
+
+            hsm.InitialState = 1;
+
+            hsm.SetImmediateSubstateRelation(1, 2);
+            hsm.SetImmediateSubstateRelation(2, 3);
+
+            Assert.Throws<InvalidInitialStateException>(() => hsm.Start());
+            Assert.IsFalse(hsm.IsStarted);
+            state1.DidNotReceive().Enter();
+            state2.DidNotReceive().Enter();
+            state3.DidNotReceive().Enter();
+
+            hsm.SetInitialStateTo(1, 2);
+
+            Assert.Throws<InvalidInitialStateException>(() => hsm.Start());
+            Assert.IsFalse(hsm.IsStarted);
+            state1.DidNotReceive().Enter();
+            state2.DidNotReceive().Enter();
+            state3.DidNotReceive().Enter();
+
+            hsm.SetInitialStateTo(2, 3);
+
+            Assert.DoesNotThrow(() => hsm.Start());
+            Assert.IsTrue(hsm.IsStarted);
+            state3.Received(1).Enter();
+            state1.Received(1).Enter();
+            state2.Received(1).Enter();
+        }
+
+        /*[Test]
         public void RemoveStates()
         {
             HSM<int, int> hsm = new HSM<int, int>();
@@ -1021,6 +1304,6 @@ namespace Tests
 
             state1.Received(1).Update();
             state3.DidNotReceive().Update();
-        }
+        }*/
     }
 }

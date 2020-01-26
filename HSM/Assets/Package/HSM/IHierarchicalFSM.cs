@@ -15,7 +15,7 @@ namespace Paps.FSM.HSM
 
         IEnumerable<TState> GetActiveHierarchyPath();
 
-        TState[] GetChildsOf(TState parent);
+        TState[] GetImmediateChildsOf(TState parent);
 
         TState GetParentOf(TState child);
 
