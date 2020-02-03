@@ -9,7 +9,7 @@ namespace Paps.FSM.HSM
 
         public int TransitionCount => throw new System.NotImplementedException();
 
-        public bool IsStarted => _stateHierarchy.IsStarted;
+        public bool IsStarted => false;
 
         public TState InitialState
         {
@@ -23,7 +23,6 @@ namespace Paps.FSM.HSM
                 _stateHierarchy.InitialState = value;
             }
         }
-            
 
         public event HierarchyChanged<TState> OnBeforeHierarchyChanges;
         public event HierarchyChanged<TState> OnHierarchyChanged;
@@ -46,8 +45,7 @@ namespace Paps.FSM.HSM
             SetTriggerComparer(triggerComparer);
 
             _stateHierarchy = new StateHierarchy<TState>(_stateComparer);
-            _transitionManager =
-                new TransitionManager<TState, TTrigger>(_stateHierarchy, _stateComparer, _triggerComparer);
+            _transitionManager = new TransitionManager<TState, TTrigger>(_stateHierarchy, _stateComparer, _triggerComparer);
         }
 
         public HSM() : this(EqualityComparer<TState>.Default, EqualityComparer<TTrigger>.Default)
@@ -90,9 +88,9 @@ namespace Paps.FSM.HSM
             return _stateHierarchy.ContainsState(stateId);
         }
 
-        public bool AreRelatives(TState superState, TState substate)
+        public bool AreParentAndChild(TState superState, TState substate)
         {
-            return _stateHierarchy.AreRelatives(superState, substate);
+            return _stateHierarchy.AreParentAndChild(superState, substate);
         }
 
         public bool ContainsTransition(Transition<TState, TTrigger> transition)
@@ -102,7 +100,7 @@ namespace Paps.FSM.HSM
 
         public IEnumerable<TState> GetActiveHierarchyPath()
         {
-            return _stateHierarchy.GetActiveHierarchyPath();
+            throw new System.NotImplementedException();
         }
 
         public KeyValuePair<Transition<TState, TTrigger>, IGuardCondition[]>[] GetGuardConditions()
@@ -127,7 +125,7 @@ namespace Paps.FSM.HSM
 
         public bool IsInState(TState stateId)
         {
-            return _stateHierarchy.IsInState(stateId);
+            throw new System.NotImplementedException();
         }
 
         public void RemoveGuardConditionFrom(Transition<TState, TTrigger> transition, IGuardCondition guardCondition)
@@ -140,9 +138,9 @@ namespace Paps.FSM.HSM
             _stateHierarchy.RemoveState(stateId);
         }
 
-        public void RemoveImmediateSubstateRelation(TState superState, TState substate)
+        public void RemoveSubstateRelation(TState superState, TState substate)
         {
-            _stateHierarchy.RemoveImmediateSubstateRelation(superState, substate);
+            _stateHierarchy.RemoveSubstateRelation(superState, substate);
         }
 
         public void RemoveTransition(Transition<TState, TTrigger> transition)
@@ -155,35 +153,19 @@ namespace Paps.FSM.HSM
             throw new System.NotImplementedException();
         }
 
-        public void SetImmediateSubstateRelation(TState superState, TState substate)
+        public void SetSubstateRelation(TState superState, TState substate)
         {
-            _stateHierarchy.SetImmediateSubstateRelation(superState, substate);
+            _stateHierarchy.SetSubstateRelation(superState, substate);
         }
 
         public void Start()
         {
-            ValidateIsNotStarted();
-
-            _stateHierarchy.Start();
-            
-        }
-
-        private void ValidateIsNotStarted()
-        {
-            if (IsStarted) throw new StateMachineStartedException();
-        }
-
-        private void ValidateIsStarted()
-        {
-            if (IsStarted == false) throw new StateMachineNotStartedException();
+            throw new System.NotImplementedException();
         }
 
         public void Stop()
         {
-            if(IsStarted)
-            {
-                _stateHierarchy.Stop();
-            }
+            throw new System.NotImplementedException();
         }
 
         public void Trigger(TTrigger trigger)
@@ -193,9 +175,7 @@ namespace Paps.FSM.HSM
 
         public void Update()
         {
-            ValidateIsStarted();
-
-            _stateHierarchy.Update();
+            throw new System.NotImplementedException();
         }
 
         public TState[] GetImmediateChildsOf(TState parent)

@@ -13,10 +13,6 @@ namespace Paps.FSM.HSM
         private IEqualityComparer<TState> _stateComparer;
         private Dictionary<TState, StateHierarchyNode> _states;
         private Dictionary<TState, StateHierarchyNode> _roots;
-        private StateHierarchyNode _currentHierarchyRootNode;
-        private List<Exception> _eventExceptionList;
-
-        public bool IsStarted { get; private set; }
         
         public TState InitialState { get; set; }
 
@@ -25,7 +21,6 @@ namespace Paps.FSM.HSM
             _stateComparer = stateComparer ?? EqualityComparer<TState>.Default;
             _states = new Dictionary<TState, StateHierarchyNode>(_stateComparer);
             _roots = new Dictionary<TState, StateHierarchyNode>(_stateComparer);
-            _eventExceptionList = new List<Exception>();
         }
 
         public StateHierarchy() : this(EqualityComparer<TState>.Default)
@@ -33,53 +28,115 @@ namespace Paps.FSM.HSM
 
         }
 
-        public void AddState(TState stateId, IState state)
+        public void AddState(TState stateId, IState stateObj)
         {
-            ValidateStateObjectIsNotNull(state);
-            ValidateCanAddState(stateId, state);
+            ValidateDoesNotContainsStateId(stateId);
+            ValidateStateObjectIsNotNull(stateObj);
 
-            var stateNode = new StateHierarchyNode(stateId, state, _stateComparer);
+            var node = new StateHierarchyNode(stateId, stateObj, _stateComparer);
 
-            _states.Add(stateId, stateNode);
-
-            _roots.Add(stateId, stateNode);
+            _states.Add(stateId, node);
+            _roots.Add(stateId, node);
         }
 
-        private void ValidateStateObjectIsNotNull(IState state)
+        private void ValidateStateObjectIsNotNull(IState stateObj)
         {
-            if (state == null) throw new ArgumentNullException(nameof(state));
+            if (stateObj == null) throw new ArgumentNullException(nameof(stateObj));
         }
 
-        private void ValidateCanAddState(TState stateId, IState state)
+        private void ValidateDoesNotContainsStateId(TState stateId)
         {
-            if (_states.ContainsKey(stateId)) throw new StateIdAlreadyAddedException();
+            if (ContainsState(stateId)) throw new StateIdAlreadyAddedException(stateId.ToString());
         }
 
         public bool RemoveState(TState stateId)
         {
-            if(_states.ContainsKey(stateId))
+            if(ContainsState(stateId))
             {
-                ValidateCanRemoveState(stateId);
+                RemoveSubstateRelationsOf(stateId);
 
-                StateHierarchyNode node = _states[stateId];
-
-                if (node.Parent != null)
-                {
-                    RemoveImmediateSubstateRelation(node.Parent.StateId, stateId);
-                }
-
-                if(node.Childs.Count > 0)
-                {
-                    var childNodes = node.Childs.Values.ToArray();
-
-                    for (int i = 0; i < childNodes.Length; i++)
-                    {
-                        RemoveImmediateSubstateRelation(stateId, childNodes[i].StateId);
-                    }
-                }
-
-                _roots.Remove(stateId);
                 _states.Remove(stateId);
+                _roots.Remove(stateId);
+            }
+
+            return false;
+        }
+
+        private void RemoveSubstateRelationsOf(TState stateId)
+        {
+            var node = NodeOf(stateId);
+
+            if (HasParent(node))
+            {
+                RemoveSubstateRelation(node.Parent.StateId, stateId);
+            }
+
+            var childs = GetImmediateChildsOf(stateId);
+
+            if (childs != null)
+            {
+                for (int i = 0; i < childs.Length; i++)
+                {
+                    RemoveSubstateRelation(stateId, childs[i]);
+                }
+            }
+        }
+
+        private bool HasParent(StateHierarchyNode node)
+        {
+            return node.Parent != null;
+        }
+
+        public void SetSubstateRelation(TState parentId, TState childId)
+        {
+            ValidateContainsId(parentId);
+            ValidateContainsId(childId);
+            ValidateChildHasNotParent(childId);
+            ValidateParentAndChildAreNotTheSame(parentId, childId);
+            ValidateChildIsNotParentOfParent(parentId, childId);
+
+            var parentNode = NodeOf(parentId);
+            var childNode = NodeOf(childId);
+
+            parentNode.Childs.Add(childId, childNode);
+
+            childNode.Parent = parentNode;
+        }
+
+        private void ValidateChildHasNotParent(TState childId)
+        {
+            var childNode = NodeOf(childId);
+
+            if (HasParent(childNode)) 
+                throw new InvalidOperationException("State with id " + childId.ToString() + " has parent with id " + childNode.Parent.StateId.ToString());
+        }
+
+        private void ValidateParentAndChildAreNotTheSame(TState parentId, TState childId)
+        {
+            if (AreEquals(parentId, childId)) 
+                throw new InvalidOperationException("Cannot set substate relation with parent and child with same id");
+        }
+
+        private void ValidateChildIsNotParentOfParent(TState parentId, TState childId)
+        {
+            var parentNode = NodeOf(parentId);
+
+            if (HasParent(parentNode) && AreEquals(parentNode.Parent.StateId, childId))
+                throw new InvalidOperationException("State with id " + parentId.ToString() + " cannot be parent of " + childId.ToString() + " because the last is parent of the first");
+        }
+
+        public bool RemoveSubstateRelation(TState parentId, TState childId)
+        {
+            ValidateContainsId(parentId);
+            ValidateContainsId(childId);
+
+            if(AreParentAndChild(parentId, childId))
+            {
+                var parentNode = NodeOf(parentId);
+                var childNode = NodeOf(childId);
+
+                parentNode.Childs.Remove(childId);
+                childNode.Parent = null;
 
                 return true;
             }
@@ -87,51 +144,14 @@ namespace Paps.FSM.HSM
             return false;
         }
 
-        private void ValidateCanRemoveState(TState stateId)
+        public bool AreParentAndChild(TState parentId, TState childId)
         {
-            ValidateIsNotActiveRoot(stateId);
-        }
-
-        private void ValidateIsNotActiveRoot(TState stateId)
-        {
-            if (IsInActiveHierarchyPath(stateId) && IsHierarchyRoot(stateId))
-                throw new InvalidOperationException("Cannot remove state because it is the root of the active hierarchy path");
-        }
-
-        private void ValidateSwitchToInitialStateIfIsAnActiveState(TState stateId)
-        {
-            if (IsInActiveHierarchyPath(stateId))
+            if(ContainsState(parentId) && ContainsState(childId))
             {
-                var node = _states[stateId];
-
-                if(AreValidInitialStatesBeginningFrom(node) == false || _stateComparer.Equals(node.InitialState, stateId))
-                {
-                    throw new InvalidOperationException("Cannot remove state because a switch to the initial state would be invalid");
-                }
-            }
-        }
-
-        private bool AreValidInitialStatesBeginningFrom(StateHierarchyNode node)
-        {
-            if (HasValidInitialState(node))
-            {
-                if (node.Childs.ContainsKey(node.InitialState))
-                    return AreValidInitialStatesBeginningFrom(_states[node.InitialState]);
-                else
-                    return true;
+                return AreEquals(GetParentOf(childId), parentId);
             }
 
             return false;
-        }
-
-        private bool HasValidInitialState(StateHierarchyNode node)
-        {
-            return (node.Childs.Count > 0 && node.Childs.ContainsKey(node.InitialState)) || node.Childs.Count == 0;
-        }
-
-        public bool ContainsState(TState stateId)
-        {
-            return _states.ContainsKey(stateId);
         }
 
         public TState[] GetStates()
@@ -139,502 +159,77 @@ namespace Paps.FSM.HSM
             return _states.Keys.ToArray();
         }
 
-        public IState GetStateById(TState id)
-        {
-            if (_states.ContainsKey(id) == false) throw new StateIdNotAddedException();
-
-            return _states[id].StateObject;
-        }
-
-        public void SetImmediateSubstateRelation(TState parent, TState child)
-        {
-            ValidateContainsStateId(parent);
-            ValidateContainsStateId(child);
-
-            if (AreImmediateRelatives(parent, child)) return;
-
-            ValidateCanSetSubstateRelation(parent, child);
-
-            var childNode = _states[child];
-
-            _roots.Remove(child);
-            
-            AddChildTo(_states[parent], childNode);
-        }
-
-        private void AddChildTo(StateHierarchyNode parent, StateHierarchyNode child)
-        {
-            child.Parent = parent;
-            parent.Childs.Add(child.StateId, child);
-
-            if (parent.IsActive && parent.Childs.Count == 1)
-            {
-                EnterInitialChildOf(parent);
-            }
-        }
-
-        private void RemoveChildFrom(StateHierarchyNode parent, TState childId)
-        {
-            if (parent.ActiveChild != null && _stateComparer.Equals(parent.ActiveChild.StateId, childId))
-            {
-                
-                ExitState(parent.ActiveChild);
-                parent.ActiveChild = null;
-            }
-
-            parent.Childs[childId].Parent = null;
-            parent.Childs.Remove(childId);
-
-            if (parent.IsActive && parent.Childs.Count > 0)
-            {
-                EnterInitialChildOf(parent);
-            }
-        }
-
-        private void EnterInitialChildOf(StateHierarchyNode node)
-        {
-            node.ActiveChild = node.Childs[node.InitialState];
-
-            if (node.ActiveChild != null)
-            {
-                EnterState(node.ActiveChild);
-            }
-        }
-
-        private void EnterState(StateHierarchyNode begin)
-        {
-            ValidateInitialStatesRecursively(begin);
-            EnterNodesRecursively(begin);
-            CallEnterEventRecursively(begin);
-        }
-
-        private void ValidateInitialStatesRecursively(StateHierarchyNode begin)
-        {
-            if(AreValidInitialStatesBeginningFrom(begin) == false) throw new InvalidInitialStateException();
-        }
-
-        private void EnterNodesRecursively(StateHierarchyNode begin)
-        {
-            var node = begin;
-
-            while(node != null)
-            {
-                node.IsActive = true;
-
-                if(node.Childs.Count > 0)
-                {
-                    node.ActiveChild = node.Childs[node.InitialState];
-                    node = node.ActiveChild;
-                }
-                else
-                {
-                    node = null;
-                }
-            }
-        }
-
-        private void CallEnterEventRecursively(StateHierarchyNode begin)
-        {
-            var node = begin;
-
-            while(node != null)
-            {
-                DoEventSafely(node.StateObject.Enter, _eventExceptionList);
-
-                node = node.ActiveChild;
-            }
-        }
-
-        private void ThrowSingleOrAggregateIfNotEmptyAndClear(List<Exception> exceptions)
-        {
-            if (exceptions.Count > 0)
-            {
-                if (exceptions.Count == 1)
-                {
-                    var singleException = exceptions.First();
-                    exceptions.Clear();
-                    throw singleException;
-                }
-                else
-                {
-                    var aggregateException = new AggregateException(exceptions);
-                    exceptions.Clear();
-                    throw aggregateException;
-                }
-            }
-            
-            exceptions.Clear();
-        }
-
-        private void DoEventSafely(Action action, List<Exception> exceptionsList)
-        {
-            try
-            {
-                action();
-            }
-            catch (Exception e)
-            {
-                exceptionsList.Add(e);
-            }
-        }
-
-        private void ExitState(StateHierarchyNode node)
-        {
-            var activeLeafNode = GetActiveLeafOf(node);
-
-            ExitNodesRecursively(node, activeLeafNode);
-            CallExitEventRecursively(node, activeLeafNode);
-        }
-
-        private void ExitNodesRecursively(StateHierarchyNode top, StateHierarchyNode leaf)
-        {
-            var topNode = top.Parent;
-
-            while (leaf != topNode)
-            {
-                leaf.IsActive = false;
-
-                leaf.ActiveChild = null;
-
-                leaf = leaf.Parent;
-            }
-        }
-
-        private void CallExitEventRecursively(StateHierarchyNode top, StateHierarchyNode leaf)
-        {
-            var topNode = top.Parent;
-
-            while (leaf != topNode)
-            {
-                DoEventSafely(leaf.StateObject.Exit, _eventExceptionList);
-
-                leaf = leaf.Parent;
-            }
-        }
-
-        private StateHierarchyNode GetActiveLeafOf(StateHierarchyNode node)
-        {
-            if(node.IsActive)
-            {
-                if (node.ActiveChild != null)
-                {
-                    return GetActiveLeafOf(node.ActiveChild);
-                }
-
-                return node;
-            }
-
-            return null;
-        }
-
-        private void ValidateCanSetSubstateRelation(TState parent, TState child)
-        {
-            ValidateHasNoParent(child);
-            ValidateParentAndChildAreNotTheSame(parent, child);
-            ValidateChildIsNotGrandfather(parent, child);
-            ValidateNewChildIsInitialStateIfParentIsActiveAndHasNoChild(parent, child);
-            ValidateNewChildHasValidInitialStatesInHierarchyPathIfParentIsActiveAndHasNoChild(parent, child);
-        }
-
-        public bool RemoveImmediateSubstateRelation(TState parentId, TState childId)
-        {
-            if(ContainsState(parentId) && ContainsState(childId))
-            {
-                var parentNode = _states[parentId];
-
-                if (parentNode.Childs.ContainsKey(childId))
-                {
-                    ValidateCanRemoveSubstateRelation(parentId, childId);
-
-                    var childNode = parentNode.Childs[childId];
-                    
-                    RemoveChildFrom(parentNode, childId);
-
-                    _roots.Add(childNode.StateId, childNode);
-
-                    return true;
-                }
-            }
-
-            return false;
-        }
-
-        private void ValidateCanRemoveSubstateRelation(TState parent, TState child)
-        {
-            ValidateSwitchToInitialStateIfIsAnActiveState(parent);
-        }
-
-        private void ValidateNewChildHasValidInitialStatesInHierarchyPathIfParentIsActiveAndHasNoChild(TState parent, TState child)
-        {
-            var parentNode = _states[parent];
-
-            if (parentNode.IsActive && parentNode.Childs.Count == 0 && AreValidInitialStatesBeginningFrom(_states[child]) == false)
-                throw new InvalidOperationException("Cannot add child state because parent is active and child has an invalid state in the hierarchy");
-        }
-
-        private void ValidateNewChildIsInitialStateIfParentIsActiveAndHasNoChild(TState parent, TState child)
-        {
-            var parentNode = _states[parent];
-
-            if(parentNode.IsActive && parentNode.Childs.Count == 0 && _stateComparer.Equals(parentNode.InitialState, child) == false)
-                throw new InvalidOperationException("Cannot add child state because parent is active and child is not initial state");
-        }
-
-        private void ValidateHasNoParent(TState child)
-        {
-            if (HasParent(child))
-                throw new InvalidSubstateRelationException
-                ("Cannot set substate relation on state " + child.ToString() + 
-                 " because it already has a parent. You could remove its current substate relation and then create a new one");
-        }
-
-        private void ValidateParentAndChildAreNotTheSame(TState parent, TState child)
-        {
-            if(_stateComparer.Equals(parent, child))
-                throw new InvalidSubstateRelationException("Parent and child cannot have the same id");
-        }
-
-        private void ValidateChildIsNotGrandfather(TState parent, TState child)
-        {
-            if(AreRelatives(child, parent))
-                throw new InvalidSubstateRelationException("Child cannot be parent's parent");
-        }
-
-        private bool ContainsChildRecursively(StateHierarchyNode parentNode, TState child)
-        {
-            if (parentNode.Childs.ContainsKey(child) == false)
-            {
-                foreach (var childNode in parentNode.Childs.Values)
-                {
-                    if (ContainsChildRecursively(childNode, child))
-                        return true;
-                }
-
-                return false;
-            }
-
-            return true;
-        }
-
-        public bool AreRelatives(TState parent, TState child)
-        {
-            if(ContainsState(parent) && ContainsState(child))
-            {
-                return ContainsChildRecursively(_states[parent], child);
-            }
-
-            return false;
-        }
-
-        public bool AreImmediateRelatives(TState parent, TState child)
-        {
-            if (ContainsState(parent) && ContainsState(child))
-            {
-                return _states[parent].Childs.ContainsKey(child);
-            }
-
-            return false;
-        }
-
-        private bool HasParent(TState state)
-        {
-            if(_states.ContainsKey(state))
-            {
-                return _states[state].Parent != null;
-            }
-
-            return false;
-        }
-
-        private void ValidateContainsStateId(TState stateId)
-        {
-            if (ContainsState(stateId) == false) throw new StateIdNotAddedException();
-        }
-        
-        public void SwitchTo(TState stateId)
-        {
-            ValidateIsStarted();
-
-            
-        }
-        
-        public bool IsValidSwitch(TState stateId)
-        {
-            if(ContainsState(stateId))
-            {
-                var node = _states[stateId];
-
-                if(IsHierarchyRoot(stateId))
-                {
-                    return true;
-                }
-                else
-                {
-                    return node.Parent.IsActive;
-                }
-            }
-
-            return false;
-        }
-
-        private bool IsHierarchyRoot(TState stateId)
-        {
-            return _roots.ContainsKey(stateId);
-        }
-
-        public void SetInitialStateTo(TState parent, TState stateId)
-        {
-            ValidateContainsStateId(stateId);
-            ValidateContainsStateId(parent);
-
-            _states[parent].InitialState = stateId;
-        }
-
-        private void ValidateInitialStates()
-        {
-            if (IsHierarchyRoot(InitialState) == false)
-                throw new InvalidInitialStateException("Initial state is not root");
-
-            ValidateInitialStatesBeginningFrom(InitialState);
-        }
-
-        private void ValidateInitialStatesBeginningFrom(TState stateId)
-        {
-            if (AreValidInitialStatesBeginningFrom(_states[stateId]) == false) throw new InvalidInitialStateException();
-        }
-
-        private void ValidateIsStarted()
-        {
-            if (IsStarted == false) throw new InvalidOperationException("Cannot execute operation because state hierarchy is not started");
-        }
-
-        private void ValidateIsNotStarted()
-        {
-            if (IsStarted == true) throw new InvalidOperationException("Cannot execute operation because state hierarchy is already started");
-        }
-
-        public void Start()
-        {
-            ValidateIsNotStarted();
-            ValidateIsNotEmpty();
-            ValidateInitialStates();
-
-            IsStarted = true;
-
-            _currentHierarchyRootNode = _states[InitialState];
-            
-            EnterState(_currentHierarchyRootNode);
-        }
-
-        private void ValidateIsNotEmpty()
-        {
-            if (_states.Count == 0) throw new EmptyStateMachineException("Cannot start because state machine has no states");
-        }
-
-        public void Update()
-        {
-            ValidateIsStarted();
-
-            UpdateState(_currentHierarchyRootNode);
-        }
-
-        private void UpdateState(StateHierarchyNode begin)
-        {
-            var node = begin;
-
-            while (node != null)
-            {
-                node.StateObject.Update();
-
-                node = node.ActiveChild;
-            }
-        }
-
-        public void Stop()
-        {
-            if(IsStarted)
-            {
-                try
-                {
-                    ExitState(_currentHierarchyRootNode);
-
-                    IsStarted = false;
-
-                    _currentHierarchyRootNode = null;
-                }
-                catch
-                {
-                    IsStarted = false;
-
-                    _currentHierarchyRootNode = null;
-
-                    throw;
-                }
-            }
-        }
-
-        public IEnumerable<TState> GetActiveHierarchyPath()
-        {
-            ValidateIsStarted();
-
-            var currentNode = _currentHierarchyRootNode;
-
-            while(currentNode != null)
-            {
-                yield return currentNode.StateId;
-
-                currentNode = currentNode.ActiveChild;
-            }
-        }
-
-        public bool IsInState(TState stateId)
-        {
-            if(ContainsState(stateId))
-            {
-                return _states[stateId].IsActive;
-            }
-
-            return false;
-        }
-
-        public TState GetParentOf(TState child)
-        {
-            ValidateContainsStateId(child);
-
-            var node = _states[child].Parent;
-
-            if (node == null)
-            {
-                return child;
-            }
-            else
-            {
-                return node.StateId;
-            }
-        }
-
-        public TState[] GetImmediateChildsOf(TState parent)
-        {
-            ValidateContainsStateId(parent);
-
-            var node = _states[parent];
-
-            if(node.Childs.Count > 0)
-            {
-                return node.Childs.Keys.ToArray();
-            }
-
-            return null;
-        }
-
         public TState[] GetRoots()
         {
-            return _roots.Count > 0 ? _roots.Keys.ToArray() : null;
+            if (_roots.Count > 0) 
+                return _roots.Keys.ToArray();
+            else 
+                return null;
         }
 
-        private bool IsInActiveHierarchyPath(TState stateId)
+        public TState[] GetImmediateChildsOf(TState stateId)
         {
-            return _states[stateId].IsActive;
+            ValidateContainsId(stateId);
+
+            var node = NodeOf(stateId);
+
+            if (node.Childs.Count > 0)
+                return node.Childs.Keys.ToArray();
+            else
+                return null;
+        }
+
+        public TState GetParentOf(TState stateId)
+        {
+            ValidateContainsId(stateId);
+
+            var node = NodeOf(stateId);
+
+            if (HasParent(node)) 
+                return node.Parent.StateId;
+            else 
+                return stateId;
+        }
+
+        public bool ContainsState(TState stateId)
+        {
+            return _states.ContainsKey(stateId);
+        }
+
+        public IState GetStateById(TState stateId)
+        {
+            ValidateContainsId(stateId);
+
+            return _states[stateId].StateObject;
+        }
+
+        public void SetInitialStateTo(TState parentId, TState initialChildId)
+        {
+            ValidateContainsId(parentId);
+            ValidateContainsId(initialChildId);
+            ValidateAreParentAndChild(parentId, initialChildId);
+
+            NodeOf(parentId).InitialState = initialChildId;
+        }
+
+        private void ValidateAreParentAndChild(TState parentId, TState childId)
+        {
+            if (AreParentAndChild(parentId, childId) == false) throw new InvalidSubstateRelationException("State with id " + parentId.ToString() + " is not parent of " + childId.ToString());
+        }
+
+        private void ValidateContainsId(TState stateId)
+        {
+            if (ContainsState(stateId) == false) throw new StateIdNotAddedException(stateId.ToString());
+        }
+
+        private bool AreEquals(TState stateId1, TState stateId2)
+        {
+            return _stateComparer.Equals(stateId1, stateId2);
+        }
+
+        private StateHierarchyNode NodeOf(TState stateId)
+        {
+            return _states[stateId];
         }
 
         private class StateHierarchyNode
@@ -643,12 +238,9 @@ namespace Paps.FSM.HSM
             public IState StateObject { get; set; }
         
             public StateHierarchyNode Parent { get; set; }
-            public StateHierarchyNode ActiveChild { get; set; }
             public TState InitialState { get; set; }
 
             public Dictionary<TState, StateHierarchyNode> Childs;
-
-            public bool IsActive { get; set; }
 
             public StateHierarchyNode(TState stateId, IState stateObject, IEqualityComparer<TState> stateComparer = null)
             {
