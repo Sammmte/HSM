@@ -93,5 +93,136 @@ namespace Tests
 
             Assert.IsFalse(hsm.ContainsState(stateId2));
         }
+
+        [Test]
+        public void Do_Nothing_If_User_Tries_To_Remove_State_Ids_That_Were_Not_Added()
+        {
+            var hsm = new HSM<int, int>();
+
+            int stateId = 1;
+
+            Assert.DoesNotThrow(() => hsm.RemoveState(stateId));
+        }
+
+        [Test]
+        public void Establish_Substate_Relations()
+        {
+            var hsm = new HSM<int, int>();
+
+            int stateId1 = 1;
+            int stateId2 = 2;
+            int stateId3 = 3;
+            int stateId4 = 4;
+
+            var stateObj = Substitute.For<IState>();
+
+            hsm.AddState(stateId1, stateObj);
+            hsm.AddState(stateId2, stateObj);
+            hsm.AddState(stateId3, stateObj);
+            hsm.AddState(stateId4, stateObj);
+
+            hsm.EstablishSubstateRelation(stateId1, stateId2);
+            hsm.EstablishSubstateRelation(stateId2, stateId3);
+
+            hsm.EstablishSubstateRelation(stateId1, stateId4);
+
+            Assert.IsTrue(hsm.AreImmediateParentAndChild(stateId1, stateId2));
+            Assert.IsTrue(hsm.AreImmediateParentAndChild(stateId1, stateId4));
+            Assert.IsFalse(hsm.AreImmediateParentAndChild(stateId1, stateId3));
+            Assert.IsTrue(hsm.AreImmediateParentAndChild(stateId2, stateId3));
+        }
+
+        [Test]
+        public void Throw_An_Exception_If_User_Tries_To_Set_A_Substate_Relation_Between_State_Ids_That_Were_Not_Added()
+        {
+            var hsm = new HSM<int, int>();
+
+            int stateId1 = 1;
+            int stateId2 = 2;
+
+            var stateObj = Substitute.For<IState>();
+
+            Assert.Throws<StateIdNotAddedException>(() => hsm.EstablishSubstateRelation(stateId1, stateId2));
+            Assert.Throws<StateIdNotAddedException>(() => hsm.EstablishSubstateRelation(stateId2, stateId1));
+
+            hsm.AddState(stateId1, stateObj);
+
+            Assert.Throws<StateIdNotAddedException>(() => hsm.EstablishSubstateRelation(stateId1, stateId2));
+            Assert.Throws<StateIdNotAddedException>(() => hsm.EstablishSubstateRelation(stateId2, stateId1));
+
+            hsm.AddState(stateId2, stateObj);
+
+            Assert.DoesNotThrow(() => hsm.EstablishSubstateRelation(stateId1, stateId2));
+        }
+
+        [Test]
+        public void Do_Nothing_If_User_Tries_To_Establish_A_Substate_Relation_Twice()
+        {
+            var hsm = new HSM<int, int>();
+
+            int stateId1 = 1;
+            int stateId2 = 2;
+
+            var stateObj = Substitute.For<IState>();
+
+            hsm.AddState(stateId1, stateObj);
+            hsm.AddState(stateId2, stateObj);
+
+            hsm.EstablishSubstateRelation(stateId1, stateId2);
+            
+            Assert.DoesNotThrow(() => hsm.EstablishSubstateRelation(stateId1, stateId2));
+        }
+
+        [Test]
+        public void Throw_An_Exception_If_User_Tries_To_Establish_A_Substate_Relation_With_The_Same_Id_In_Both_Parameters()
+        {
+            var hsm = new HSM<int, int>();
+
+            int stateId = 1;
+
+            var stateObj = Substitute.For<IState>();
+
+            hsm.AddState(stateId, stateObj);
+
+            Assert.Throws<InvalidSubstateRelationException>(() => hsm.EstablishSubstateRelation(stateId, stateId));
+        }
+
+        [Test]
+        public void Throw_An_Exception_If_User_Tries_To_Establish_A_Substate_Relation_And_Child_State_Already_Has_A_Parent()
+        {
+            var hsm = new HSM<int, int>();
+
+            int stateId1 = 1;
+            int stateId2 = 2;
+            int stateId3 = 3;
+
+            var stateObj = Substitute.For<IState>();
+
+            hsm.AddState(stateId1, stateObj);
+            hsm.AddState(stateId2, stateObj);
+            hsm.AddState(stateId3, stateObj);
+
+            hsm.EstablishSubstateRelation(stateId2, stateId3);
+
+            Assert.Throws<InvalidSubstateRelationException>(() => hsm.EstablishSubstateRelation(stateId1, stateId3));
+        }
+
+        [Test]
+        public void Throw_An_Exception_If_User_Tries_To_Establish_A_Substate_Relation_Between_Parent_And_Grandfather()
+        {
+            var hsm = new HSM<int, int>();
+
+            int stateId1 = 1;
+            int stateId2 = 2;
+
+            var stateObj = Substitute.For<IState>();
+
+            hsm.AddState(stateId1, stateObj);
+            hsm.AddState(stateId2, stateObj);
+
+            hsm.EstablishSubstateRelation(stateId1, stateId2);
+
+            Assert.Throws<InvalidSubstateRelationException>(() => hsm.EstablishSubstateRelation(stateId2, stateId1));
+        }
     }
 }

@@ -8,10 +8,10 @@ namespace Paps.FSM.HSM
         event HierarchyChanged<TState> OnBeforeHierarchyChanges;
         event HierarchyChanged<TState> OnHierarchyChanged;
 
-        void SetSubstateRelation(TState parentState, TState substate);
-        void RemoveSubstateRelation(TState parentState, TState substate);
+        void EstablishSubstateRelation(TState parentState, TState substate);
+        void BreakSubstateRelation(TState parentState, TState substate);
 
-        bool AreParentAndChild(TState parentState, TState substate);
+        bool AreImmediateParentAndChild(TState parentState, TState substate);
 
         IEnumerable<TState> GetActiveHierarchyPath();
 

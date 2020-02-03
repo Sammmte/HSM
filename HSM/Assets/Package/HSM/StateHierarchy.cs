@@ -68,7 +68,7 @@ namespace Paps.FSM.HSM
 
             if (HasParent(node))
             {
-                RemoveSubstateRelation(node.Parent.StateId, stateId);
+                BreakSubstateRelation(node.Parent.StateId, stateId);
             }
 
             var childs = GetImmediateChildsOf(stateId);
@@ -77,7 +77,7 @@ namespace Paps.FSM.HSM
             {
                 for (int i = 0; i < childs.Length; i++)
                 {
-                    RemoveSubstateRelation(stateId, childs[i]);
+                    BreakSubstateRelation(stateId, childs[i]);
                 }
             }
         }
@@ -87,20 +87,24 @@ namespace Paps.FSM.HSM
             return node.Parent != null;
         }
 
-        public void SetSubstateRelation(TState parentId, TState childId)
+        public void EstablishSubstateRelation(TState parentId, TState childId)
         {
             ValidateContainsId(parentId);
             ValidateContainsId(childId);
-            ValidateChildHasNotParent(childId);
-            ValidateParentAndChildAreNotTheSame(parentId, childId);
-            ValidateChildIsNotParentOfParent(parentId, childId);
 
-            var parentNode = NodeOf(parentId);
-            var childNode = NodeOf(childId);
+            if(AreImmediateParentAndChild(parentId, childId) == false)
+            {
+                ValidateChildHasNotParent(childId);
+                ValidateParentAndChildAreNotTheSame(parentId, childId);
+                ValidateChildIsNotParentOfParent(parentId, childId);
 
-            parentNode.Childs.Add(childId, childNode);
+                var parentNode = NodeOf(parentId);
+                var childNode = NodeOf(childId);
 
-            childNode.Parent = parentNode;
+                parentNode.Childs.Add(childId, childNode);
+
+                childNode.Parent = parentNode;
+            }
         }
 
         private void ValidateChildHasNotParent(TState childId)
@@ -108,13 +112,13 @@ namespace Paps.FSM.HSM
             var childNode = NodeOf(childId);
 
             if (HasParent(childNode)) 
-                throw new InvalidOperationException("State with id " + childId.ToString() + " has parent with id " + childNode.Parent.StateId.ToString());
+                throw new InvalidSubstateRelationException("State with id " + childId.ToString() + " has parent with id " + childNode.Parent.StateId.ToString());
         }
 
         private void ValidateParentAndChildAreNotTheSame(TState parentId, TState childId)
         {
             if (AreEquals(parentId, childId)) 
-                throw new InvalidOperationException("Cannot set substate relation with parent and child with same id");
+                throw new InvalidSubstateRelationException("Cannot set substate relation with parent and child with same id");
         }
 
         private void ValidateChildIsNotParentOfParent(TState parentId, TState childId)
@@ -122,15 +126,15 @@ namespace Paps.FSM.HSM
             var parentNode = NodeOf(parentId);
 
             if (HasParent(parentNode) && AreEquals(parentNode.Parent.StateId, childId))
-                throw new InvalidOperationException("State with id " + parentId.ToString() + " cannot be parent of " + childId.ToString() + " because the last is parent of the first");
+                throw new InvalidSubstateRelationException("State with id " + parentId.ToString() + " cannot be parent of " + childId.ToString() + " because the last is parent of the first");
         }
 
-        public bool RemoveSubstateRelation(TState parentId, TState childId)
+        public bool BreakSubstateRelation(TState parentId, TState childId)
         {
             ValidateContainsId(parentId);
             ValidateContainsId(childId);
 
-            if(AreParentAndChild(parentId, childId))
+            if(AreImmediateParentAndChild(parentId, childId))
             {
                 var parentNode = NodeOf(parentId);
                 var childNode = NodeOf(childId);
@@ -144,11 +148,11 @@ namespace Paps.FSM.HSM
             return false;
         }
 
-        public bool AreParentAndChild(TState parentId, TState childId)
+        public bool AreImmediateParentAndChild(TState parentId, TState childId)
         {
             if(ContainsState(parentId) && ContainsState(childId))
             {
-                return AreEquals(GetParentOf(childId), parentId);
+                return NodeOf(parentId).Childs.ContainsKey(childId);
             }
 
             return false;
@@ -214,7 +218,7 @@ namespace Paps.FSM.HSM
 
         private void ValidateAreParentAndChild(TState parentId, TState childId)
         {
-            if (AreParentAndChild(parentId, childId) == false) throw new InvalidSubstateRelationException("State with id " + parentId.ToString() + " is not parent of " + childId.ToString());
+            if (AreImmediateParentAndChild(parentId, childId) == false) throw new InvalidSubstateRelationException("State with id " + parentId.ToString() + " is not parent of " + childId.ToString());
         }
 
         private void ValidateContainsId(TState stateId)

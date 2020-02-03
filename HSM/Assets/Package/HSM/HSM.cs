@@ -88,9 +88,9 @@ namespace Paps.FSM.HSM
             return _stateHierarchy.ContainsState(stateId);
         }
 
-        public bool AreParentAndChild(TState superState, TState substate)
+        public bool AreImmediateParentAndChild(TState superState, TState substate)
         {
-            return _stateHierarchy.AreParentAndChild(superState, substate);
+            return _stateHierarchy.AreImmediateParentAndChild(superState, substate);
         }
 
         public bool ContainsTransition(Transition<TState, TTrigger> transition)
@@ -138,9 +138,9 @@ namespace Paps.FSM.HSM
             _stateHierarchy.RemoveState(stateId);
         }
 
-        public void RemoveSubstateRelation(TState superState, TState substate)
+        public void BreakSubstateRelation(TState superState, TState substate)
         {
-            _stateHierarchy.RemoveSubstateRelation(superState, substate);
+            _stateHierarchy.BreakSubstateRelation(superState, substate);
         }
 
         public void RemoveTransition(Transition<TState, TTrigger> transition)
@@ -153,9 +153,9 @@ namespace Paps.FSM.HSM
             throw new System.NotImplementedException();
         }
 
-        public void SetSubstateRelation(TState superState, TState substate)
+        public void EstablishSubstateRelation(TState superState, TState substate)
         {
-            _stateHierarchy.SetSubstateRelation(superState, substate);
+            _stateHierarchy.EstablishSubstateRelation(superState, substate);
         }
 
         public void Start()
