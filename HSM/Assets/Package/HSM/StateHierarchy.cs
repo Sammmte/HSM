@@ -104,6 +104,8 @@ namespace Paps.FSM.HSM
                 parentNode.Childs.Add(childId, childNode);
 
                 childNode.Parent = parentNode;
+
+                _roots.Remove(childId);
             }
         }
 

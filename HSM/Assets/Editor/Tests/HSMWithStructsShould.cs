@@ -224,5 +224,128 @@ namespace Tests
 
             Assert.Throws<InvalidSubstateRelationException>(() => hsm.EstablishSubstateRelation(stateId2, stateId1));
         }
+
+        [Test]
+        public void Return_False_On_AreImmediateParentAndChild_If_States_Are_Grandfather_And_Grandson()
+        {
+            var hsm = new HSM<int, int>();
+
+            int stateId1 = 1;
+            int stateId2 = 2;
+            int stateId3 = 3;
+
+            var stateObj = Substitute.For<IState>();
+
+            hsm.AddState(stateId1, stateObj);
+            hsm.AddState(stateId2, stateObj);
+            hsm.AddState(stateId3, stateObj);
+
+            hsm.EstablishSubstateRelation(stateId1, stateId2);
+            hsm.EstablishSubstateRelation(stateId2, stateId3);
+
+            Assert.IsFalse(hsm.AreImmediateParentAndChild(stateId1, stateId3));
+        }
+
+        [Test]
+        public void Return_True_On_AreImmediateParentAndChild_If_States_Are_Parent_And_Child()
+        {
+            var hsm = new HSM<int, int>();
+
+            int stateId1 = 1;
+            int stateId2 = 2;
+
+            var stateObj = Substitute.For<IState>();
+
+            hsm.AddState(stateId1, stateObj);
+            hsm.AddState(stateId2, stateObj);
+
+            hsm.EstablishSubstateRelation(stateId1, stateId2);
+
+            Assert.IsTrue(hsm.AreImmediateParentAndChild(stateId1, stateId2));
+        }
+
+        [Test]
+        public void Return_Orphan_States_As_Roots()
+        {
+            var hsm = new HSM<int, int>();
+
+            int stateId1 = 1;
+            int stateId2 = 2;
+            int stateId3 = 3;
+
+            var stateObj = Substitute.For<IState>();
+
+            hsm.AddState(stateId1, stateObj);
+            hsm.AddState(stateId2, stateObj);
+            hsm.AddState(stateId3, stateObj);
+
+            hsm.EstablishSubstateRelation(stateId1, stateId2);
+
+            var roots = hsm.GetRoots();
+
+            Assert.Contains(stateId1, roots);
+            Assert.Contains(stateId3, roots);
+            Assert.IsFalse(roots.Contains(stateId2));
+        }
+
+        [Test]
+        public void Return_Null_If_There_Is_No_Orphan_States_When_Asked_For_Roots()
+        {
+            var hsm = new HSM<int, int>();
+
+            Assert.IsNull(hsm.GetRoots());
+        }
+
+        [Test]
+        public void Return_Parent_Of_State()
+        {
+            var hsm = new HSM<int, int>();
+
+            int stateId1 = 1;
+            int stateId2 = 2;
+
+            var stateObj = Substitute.For<IState>();
+
+            hsm.AddState(stateId1, stateObj);
+            hsm.AddState(stateId2, stateObj);
+
+            hsm.EstablishSubstateRelation(stateId1, stateId2);
+
+            var parent = hsm.GetParentOf(stateId2);
+
+            Assert.AreEqual(stateId1, parent);
+        }
+
+        [Test]
+        public void Return_Child_Id_If_Child_Has_No_Parent_When_Asked_For_Parent_Of_State()
+        {
+            var hsm = new HSM<int, int>();
+
+            int stateId1 = 1;
+
+            var stateObj = Substitute.For<IState>();
+
+            hsm.AddState(stateId1, stateObj);
+
+            var parent = hsm.GetParentOf(stateId1);
+
+            Assert.AreEqual(stateId1, parent);
+        }
+
+        [Test]
+        public void Return_State_Object_By_Id()
+        {
+            var hsm = new HSM<int, int>();
+
+            int stateId1 = 1;
+
+            var stateObj = Substitute.For<IState>();
+
+            hsm.AddState(stateId1, stateObj);
+
+            var returnedStateObject = hsm.GetStateById(stateId1);
+
+            Assert.AreEqual(stateObj, returnedStateObject);
+        }
     }
 }
