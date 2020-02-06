@@ -20,6 +20,7 @@ namespace Paps.FSM.HSM
         TState GetParentOf(TState child);
 
         void SetInitialStateTo(TState parentState, TState initialState);
+        TState GetInitialStateOf(TState parentState);
 
         TState[] GetRoots();
     }

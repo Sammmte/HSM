@@ -53,7 +53,7 @@ namespace Paps.FSM.HSM
         {
             if(ContainsState(stateId))
             {
-                RemoveSubstateRelationsOf(stateId);
+                BreakSubstateRelationsOf(stateId);
 
                 _states.Remove(stateId);
                 _roots.Remove(stateId);
@@ -62,7 +62,7 @@ namespace Paps.FSM.HSM
             return false;
         }
 
-        private void RemoveSubstateRelationsOf(TState stateId)
+        private void BreakSubstateRelationsOf(TState stateId)
         {
             var node = NodeOf(stateId);
 
@@ -212,10 +212,15 @@ namespace Paps.FSM.HSM
         public void SetInitialStateTo(TState parentId, TState initialChildId)
         {
             ValidateContainsId(parentId);
-            ValidateContainsId(initialChildId);
-            ValidateAreParentAndChild(parentId, initialChildId);
 
             NodeOf(parentId).InitialState = initialChildId;
+        }
+
+        public TState GetInitialStateOf(TState parentId)
+        {
+            ValidateContainsId(parentId);
+
+            return NodeOf(parentId).InitialState;
         }
 
         private void ValidateAreParentAndChild(TState parentId, TState childId)

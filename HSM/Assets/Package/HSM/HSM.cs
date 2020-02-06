@@ -193,6 +193,11 @@ namespace Paps.FSM.HSM
             _stateHierarchy.SetInitialStateTo(parentState, initialState);
         }
 
+        public TState GetInitialStateOf(TState parentState)
+        {
+            return _stateHierarchy.GetInitialStateOf(parentState);
+        }
+
         public TState[] GetRoots()
         {
             return _stateHierarchy.GetRoots();

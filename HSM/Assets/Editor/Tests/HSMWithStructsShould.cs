@@ -4,11 +4,26 @@ using Paps.FSM;
 using Paps.FSM.HSM;
 using System.Linq;
 using System;
+using System.Collections;
 
 namespace Tests
 {
     public class HSMWithStructsShould
     {
+        private static void AssertDoesNotContains(object notExpected, ICollection collection)
+        {
+            try
+            {
+                Assert.Contains(notExpected, collection);
+            }
+            catch(AssertionException)
+            {
+                return;
+            }
+
+            throw new AssertionException("expected collection not to contain " + notExpected);
+        }
+
         [Test]
         public void Add_States()
         {
@@ -285,7 +300,7 @@ namespace Tests
 
             Assert.Contains(stateId1, roots);
             Assert.Contains(stateId3, roots);
-            Assert.IsFalse(roots.Contains(stateId2));
+            AssertDoesNotContains(stateId2, roots);
         }
 
         [Test]
@@ -333,6 +348,16 @@ namespace Tests
         }
 
         [Test]
+        public void Throw_An_Exception_If_User_Tries_To_Ask_For_The_Parent_Of_A_State_That_Was_Not_Added()
+        {
+            var hsm = new HSM<int, int>();
+
+            int stateId1 = 1;
+
+            Assert.Throws<StateIdNotAddedException>(() => hsm.GetParentOf(stateId1));
+        }
+
+        [Test]
         public void Return_State_Object_By_Id()
         {
             var hsm = new HSM<int, int>();
@@ -346,6 +371,141 @@ namespace Tests
             var returnedStateObject = hsm.GetStateById(stateId1);
 
             Assert.AreEqual(stateObj, returnedStateObject);
+        }
+
+        [Test]
+        public void Throw_An_Exception_If_User_Tries_To_Ask_For_The_State_Object_Of_A_State_That_Was_Not_Added()
+        {
+            var hsm = new HSM<int, int>();
+
+            int stateId1 = 1;
+
+            Assert.Throws<StateIdNotAddedException>(() => hsm.GetStateById(stateId1));
+        }
+
+        [Test]
+        public void Return_Only_Immediate_Childs_Of_State()
+        {
+            var hsm = new HSM<int, int>();
+
+            int stateId1 = 1;
+            int stateId2 = 2;
+            int stateId3 = 3;
+            int stateId4 = 4;
+
+            var stateObj = Substitute.For<IState>();
+
+            hsm.AddState(stateId1, stateObj);
+            hsm.AddState(stateId2, stateObj);
+            hsm.AddState(stateId3, stateObj);
+            hsm.AddState(stateId4, stateObj);
+
+            hsm.EstablishSubstateRelation(stateId1, stateId2);
+            hsm.EstablishSubstateRelation(stateId1, stateId3);
+
+            hsm.EstablishSubstateRelation(stateId2, stateId4);
+
+            var childs = hsm.GetImmediateChildsOf(stateId1);
+
+            Assert.Contains(stateId2, childs);
+            Assert.Contains(stateId3, childs);
+            AssertDoesNotContains(stateId4, childs);
+        }
+
+        [Test]
+        public void Return_Null_If_State_Does_Not_Has_Childs_When_Asked_For_Immediate_Childs()
+        {
+            var hsm = new HSM<int, int>();
+
+            int stateId1 = 1;
+
+            var stateObj = Substitute.For<IState>();
+
+            hsm.AddState(stateId1, stateObj);
+
+            var childs = hsm.GetImmediateChildsOf(stateId1);
+
+            Assert.IsNull(childs);
+        }
+
+        [Test]
+        public void Throw_An_Exception_If_User_Tries_To_Ask_For_Childs_Of_A_State_That_Was_Not_Added()
+        {
+            var hsm = new HSM<int, int>();
+
+            int stateId1 = 1;
+
+            Assert.Throws<StateIdNotAddedException>(() => hsm.GetImmediateChildsOf(stateId1));
+        }
+
+        [Test]
+        public void Return_States()
+        {
+            var hsm = new HSM<int, int>();
+
+            int stateId1 = 1;
+            int stateId2 = 2;
+
+            var stateObj = Substitute.For<IState>();
+
+            hsm.AddState(stateId1, stateObj);
+            hsm.AddState(stateId2, stateObj);
+
+            var states = hsm.GetStates();
+
+            Assert.Contains(stateId1, states);
+            Assert.Contains(stateId2, states);
+        }
+
+        [Test]
+        public void Set_Initial_Child_State_To_A_State()
+        {
+            var hsm = new HSM<int, int>();
+
+            int stateId1 = 1;
+            int stateId2 = 2;
+
+            var stateObj = Substitute.For<IState>();
+
+            hsm.AddState(stateId1, stateObj);
+            hsm.AddState(stateId2, stateObj);
+
+            hsm.SetInitialStateTo(stateId1, stateId2);
+
+            Assert.AreEqual(stateId2, hsm.GetInitialStateOf(stateId1));
+        }
+
+        [Test]
+        public void Return_Default_Type_Value_If_Initial_State_Is_Not_Set()
+        {
+            var hsm = new HSM<int, int>();
+
+            Assert.IsTrue(hsm.InitialState == default);
+        }
+
+        [Test]
+        public void Return_Default_Type_Value_If_Initial_State_Is_Not_Set_On_A_State()
+        {
+            var hsm = new HSM<int, int>();
+
+            int stateId1 = 1;
+
+            var stateObj = Substitute.For<IState>();
+
+            hsm.AddState(stateId1, stateObj);
+
+            Assert.IsTrue(hsm.GetInitialStateOf(stateId1) == default);
+        }
+
+        [Test]
+        public void Throw_An_Exception_If_User_Tries_To_Set_Initial_State_Of_A_State_With_An_Id_That_Was_Not_Added()
+        {
+            var hsm = new HSM<int, int>();
+
+            int stateId1 = 1;
+            int stateId2 = 2;
+
+            Assert.Throws<StateIdNotAddedException>(() => hsm.SetInitialStateTo(stateId1, stateId2));
         }
     }
 }
