@@ -87,6 +87,20 @@ namespace Paps.FSM.HSM
             return node.Parent != null;
         }
 
+        public bool HasParent(TState stateId)
+        {
+            ValidateContainsId(stateId);
+
+            return NodeOf(stateId).Parent != null;
+        }
+
+        public bool HasChilds(TState stateId)
+        {
+            ValidateContainsId(stateId);
+
+            return NodeOf(stateId).Childs.Count > 0;
+        }
+
         public void EstablishSubstateRelation(TState parentId, TState childId)
         {
             ValidateContainsId(parentId);
@@ -243,6 +257,11 @@ namespace Paps.FSM.HSM
         private StateHierarchyNode NodeOf(TState stateId)
         {
             return _states[stateId];
+        }
+
+        public bool IsRoot(TState stateId)
+        {
+            return _roots.ContainsKey(stateId);
         }
 
         private class StateHierarchyNode
