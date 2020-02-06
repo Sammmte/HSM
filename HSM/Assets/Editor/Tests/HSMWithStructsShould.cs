@@ -37,12 +37,12 @@ namespace Tests
 
             hsm.AddState(stateId1, stateObj1);
 
-            Assert.IsTrue(hsm.ContainsState(stateId1));
+            Assert.That(hsm.ContainsState(stateId1), "Contains state " + stateId1);
             Assert.AreEqual(hsm.GetStateById(stateId1), stateObj1);
 
             hsm.AddState(stateId2, stateObj2);
 
-            Assert.IsTrue(hsm.ContainsState(stateId2));
+            Assert.That(hsm.ContainsState(stateId2), "Contains state " + stateId2);
             Assert.AreEqual(hsm.GetStateById(stateId2), stateObj2);
         }
 
@@ -101,12 +101,12 @@ namespace Tests
 
             hsm.RemoveState(stateId1);
 
-            Assert.IsFalse(hsm.ContainsState(stateId1));
-            Assert.IsTrue(hsm.ContainsState(stateId2));
+            Assert.That(hsm.ContainsState(stateId1) == false, "Does not contains state " + stateId1);
+            Assert.That(hsm.ContainsState(stateId2), "Contains state " + stateId2);
 
             hsm.RemoveState(stateId2);
 
-            Assert.IsFalse(hsm.ContainsState(stateId2));
+            Assert.That(hsm.ContainsState(stateId2) == false, "Does not contains state " + stateId2);
         }
 
         [Test]
@@ -238,6 +238,26 @@ namespace Tests
             hsm.EstablishSubstateRelation(stateId1, stateId2);
 
             Assert.Throws<InvalidSubstateRelationException>(() => hsm.EstablishSubstateRelation(stateId2, stateId1));
+        }
+
+        [Test]
+        public void Break_Substate_Relations()
+        {
+            var hsm = new HSM<int, int>();
+
+            int stateId1 = 1;
+            int stateId2 = 2;
+
+            var stateObj = Substitute.For<IState>();
+
+            hsm.AddState(stateId1, stateObj);
+            hsm.AddState(stateId2, stateObj);
+
+            hsm.EstablishSubstateRelation(stateId1, stateId2);
+
+            hsm.BreakSubstateRelation(stateId1, stateId2);
+
+            Assert.That(hsm.AreImmediateParentAndChild(stateId1, stateId2) == false, "Are not immediate relatives");
         }
 
         [Test]
@@ -480,7 +500,7 @@ namespace Tests
         {
             var hsm = new HSM<int, int>();
 
-            Assert.IsTrue(hsm.InitialState == default);
+            Assert.That(hsm.InitialState == default, "Default initial state is default type value");
         }
 
         [Test]
@@ -494,7 +514,7 @@ namespace Tests
 
             hsm.AddState(stateId1, stateObj);
 
-            Assert.IsTrue(hsm.GetInitialStateOf(stateId1) == default);
+            Assert.That(hsm.GetInitialStateOf(stateId1) == default, "Default initial state of another state is default type value");
         }
 
         [Test]
@@ -506,6 +526,98 @@ namespace Tests
             int stateId2 = 2;
 
             Assert.Throws<StateIdNotAddedException>(() => hsm.SetInitialStateTo(stateId1, stateId2));
+        }
+
+        [Test]
+        public void Convert_Into_Root_A_Child_State_After_Break_Substate_Relation()
+        {
+            var hsm = new HSM<int, int>();
+
+            int stateId1 = 1;
+            int stateId2 = 2;
+
+            var stateObj = Substitute.For<IState>();
+
+            hsm.AddState(stateId1, stateObj);
+            hsm.AddState(stateId2, stateObj);
+
+            hsm.EstablishSubstateRelation(stateId1, stateId2);
+
+            hsm.BreakSubstateRelation(stateId1, stateId2);
+
+            var roots = hsm.GetRoots();
+
+            Assert.Contains(stateId1, roots);
+            Assert.Contains(stateId2, roots);
+        }
+
+        [Test]
+        public void Return_Child_State_Has_No_Parent_After_Its_Substate_Relation_With_Its_Previous_Parent_Was_Broken()
+        {
+            var hsm = new HSM<int, int>();
+
+            int stateId1 = 1;
+            int stateId2 = 2;
+
+            var stateObj = Substitute.For<IState>();
+
+            hsm.AddState(stateId1, stateObj);
+            hsm.AddState(stateId2, stateObj);
+
+            hsm.EstablishSubstateRelation(stateId1, stateId2);
+
+            hsm.BreakSubstateRelation(stateId1, stateId2);
+
+            Assert.That(hsm.GetParentOf(stateId2) == stateId2, "Child has no parent after break substate relation");
+        }
+
+        [Test]
+        public void Return_Parent_Has_No_Child_If_Their_Substate_Relation_Were_Broken()
+        {
+            var hsm = new HSM<int, int>();
+
+            int stateId1 = 1;
+            int stateId2 = 2;
+
+            var stateObj = Substitute.For<IState>();
+
+            hsm.AddState(stateId1, stateObj);
+            hsm.AddState(stateId2, stateObj);
+
+            hsm.EstablishSubstateRelation(stateId1, stateId2);
+
+            hsm.BreakSubstateRelation(stateId1, stateId2);
+
+            var childs = hsm.GetImmediateChildsOf(stateId1);
+
+            Assert.IsNull(childs);
+        }
+
+        [Test]
+        public void Break_All_Substate_Relations_Related_To_A_State_When_It_Is_Removed()
+        {
+            var hsm = new HSM<int, int>();
+
+            int stateId1 = 1;
+            int stateId2 = 2;
+            int stateId3 = 3;
+
+            var stateObj = Substitute.For<IState>();
+
+            hsm.AddState(stateId1, stateObj);
+            hsm.AddState(stateId2, stateObj);
+            hsm.AddState(stateId3, stateObj);
+
+            hsm.EstablishSubstateRelation(stateId1, stateId2);
+            hsm.EstablishSubstateRelation(stateId2, stateId3);
+
+            hsm.RemoveState(stateId2);
+
+            var roots = hsm.GetRoots();
+
+            Assert.Contains(stateId1, roots);
+            Assert.Contains(stateId3, roots);
+            AssertDoesNotContains(stateId2, roots);
         }
     }
 }
