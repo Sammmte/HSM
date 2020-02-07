@@ -5,6 +5,7 @@ using Paps.FSM.HSM;
 using System.Linq;
 using System;
 using System.Collections;
+using System.Collections.Generic;
 
 namespace Tests
 {
@@ -22,6 +23,11 @@ namespace Tests
             }
 
             throw new AssertionException("expected collection not to contain " + notExpected);
+        }
+
+        private static void AssertContains<T>(T expected, IEnumerable<T> enumerable)
+        {
+            if (enumerable.Contains(expected) == false) throw new AssertionException("Enumerable does not contains expected value " + expected);
         }
 
         [Test]
@@ -618,6 +624,291 @@ namespace Tests
             Assert.Contains(stateId1, roots);
             Assert.Contains(stateId3, roots);
             AssertDoesNotContains(stateId2, roots);
+        }
+
+        [Test]
+        public void Start_And_Enter_Initial_States()
+        {
+            var hsm = new HSM<int, int>();
+
+            int stateId1 = 1;
+            int stateId2 = 2;
+            int stateId3 = 3;
+
+            var stateObj = Substitute.For<IState>();
+
+            hsm.AddState(stateId1, stateObj);
+            hsm.AddState(stateId2, stateObj);
+            hsm.AddState(stateId3, stateObj);
+
+            hsm.EstablishSubstateRelation(stateId1, stateId2);
+            hsm.EstablishSubstateRelation(stateId2, stateId3);
+
+            hsm.InitialState = stateId1;
+
+            hsm.SetInitialStateTo(stateId1, stateId2);
+            hsm.SetInitialStateTo(stateId2, stateId3);
+
+            Assert.DoesNotThrow(() => hsm.Start());
+            Assert.That(hsm.IsStarted, "HSM is started");
+
+            stateObj.Received(hsm.GetActiveHierarchyPath().Count()).Enter();
+        }
+
+        [Test]
+        public void Enter_States_From_Root_To_Leaf()
+        {
+            var hsm = new HSM<int, int>();
+
+            int stateId1 = 1;
+            int stateId2 = 2;
+            int stateId3 = 3;
+
+            var stateObj1 = Substitute.For<IState>();
+            var stateObj2 = Substitute.For<IState>();
+            var stateObj3 = Substitute.For<IState>();
+
+            hsm.AddState(stateId1, stateObj1);
+            hsm.AddState(stateId2, stateObj2);
+            hsm.AddState(stateId3, stateObj3);
+
+            hsm.EstablishSubstateRelation(stateId1, stateId2);
+            hsm.EstablishSubstateRelation(stateId2, stateId3);
+
+            hsm.InitialState = stateId1;
+
+            hsm.SetInitialStateTo(stateId1, stateId2);
+            hsm.SetInitialStateTo(stateId2, stateId3);
+
+            hsm.Start();
+
+            Received.InOrder(() => {
+                stateObj1.Enter();
+                stateObj2.Enter();
+                stateObj3.Enter();
+                });
+        }
+
+        [Test]
+        public void Return_Active_Hierarchy_Path()
+        {
+            var hsm = new HSM<int, int>();
+
+            int stateId1 = 1;
+            int stateId2 = 2;
+            int stateId3 = 3;
+
+            var stateObj = Substitute.For<IState>();
+
+            hsm.AddState(stateId1, stateObj);
+            hsm.AddState(stateId2, stateObj);
+            hsm.AddState(stateId3, stateObj);
+
+            hsm.EstablishSubstateRelation(stateId1, stateId2);
+            hsm.EstablishSubstateRelation(stateId2, stateId3);
+
+            hsm.InitialState = stateId1;
+
+            hsm.SetInitialStateTo(stateId1, stateId2);
+            hsm.SetInitialStateTo(stateId2, stateId3);
+
+            hsm.Start();
+
+            var activeHierarchyPath = hsm.GetActiveHierarchyPath();
+
+            AssertContains(stateId1, activeHierarchyPath);
+            AssertContains(stateId2, activeHierarchyPath);
+            AssertContains(stateId3, activeHierarchyPath);
+        }
+
+        [Test]
+        public void Throw_An_Exception_If_A_State_With_Childs_Does_Not_Contains_Its_Initial_State_On_Start()
+        {
+            var hsm = new HSM<int, int>();
+
+            int stateId1 = 1;
+            int stateId2 = 2;
+            int stateId3 = 3;
+
+            var stateObj = Substitute.For<IState>();
+
+            hsm.AddState(stateId1, stateObj);
+            hsm.AddState(stateId2, stateObj);
+            hsm.AddState(stateId3, stateObj);
+
+            hsm.EstablishSubstateRelation(stateId1, stateId2);
+            hsm.EstablishSubstateRelation(stateId2, stateId3);
+
+            hsm.InitialState = stateId1;
+
+            hsm.SetInitialStateTo(stateId1, stateId2);
+
+            Assert.Throws<InvalidInitialStateException>(() => hsm.Start());
+
+            stateObj.DidNotReceive().Enter();
+        }
+
+        [Test]
+        public void Throw_An_Exception_If_Any_Candidate_To_Initial_Active_Hierarchy_Path_Is_Not_Added_To_The_State_Machine_On_Start()
+        {
+            var hsm = new HSM<int, int>();
+
+            int stateId1 = 1;
+            int stateId2 = 2;
+            int stateId3 = 3;
+            int stateIdNotAdded = 4;
+
+            var stateObj = Substitute.For<IState>();
+
+            hsm.AddState(stateId1, stateObj);
+            hsm.AddState(stateId2, stateObj);
+            hsm.AddState(stateId3, stateObj);
+
+            hsm.EstablishSubstateRelation(stateId1, stateId2);
+            hsm.EstablishSubstateRelation(stateId2, stateId3);
+
+            hsm.InitialState = stateId1;
+
+            hsm.SetInitialStateTo(stateId1, stateId2);
+            hsm.SetInitialStateTo(stateId2, stateIdNotAdded);
+
+            Assert.Throws<InvalidInitialStateException>(() => hsm.Start());
+        }
+
+        [Test]
+        public void Stop_And_Exit_States_In_The_Active_Hierarchy_Path()
+        {
+            var hsm = new HSM<int, int>();
+
+            int stateId1 = 1;
+            int stateId2 = 2;
+            int stateId3 = 3;
+
+            var stateObj = Substitute.For<IState>();
+
+            hsm.AddState(stateId1, stateObj);
+            hsm.AddState(stateId2, stateObj);
+            hsm.AddState(stateId3, stateObj);
+
+            hsm.EstablishSubstateRelation(stateId1, stateId2);
+            hsm.EstablishSubstateRelation(stateId2, stateId3);
+
+            hsm.InitialState = stateId1;
+
+            hsm.SetInitialStateTo(stateId1, stateId2);
+            hsm.SetInitialStateTo(stateId2, stateId3);
+
+            hsm.Start();
+
+            int activeHierarchyPathCount = hsm.GetActiveHierarchyPath().Count();
+
+            hsm.Stop();
+
+            Assert.That(hsm.IsStarted == false, "Is stopped");
+
+            stateObj.Received(activeHierarchyPathCount).Exit();
+        }
+
+        [Test]
+        public void Exit_States_From_Leaf_To_Root()
+        {
+            var hsm = new HSM<int, int>();
+
+            int stateId1 = 1;
+            int stateId2 = 2;
+            int stateId3 = 3;
+
+            var stateObj1 = Substitute.For<IState>();
+            var stateObj2 = Substitute.For<IState>();
+            var stateObj3 = Substitute.For<IState>();
+
+            hsm.AddState(stateId1, stateObj1);
+            hsm.AddState(stateId2, stateObj2);
+            hsm.AddState(stateId3, stateObj3);
+
+            hsm.EstablishSubstateRelation(stateId1, stateId2);
+            hsm.EstablishSubstateRelation(stateId2, stateId3);
+
+            hsm.InitialState = stateId1;
+
+            hsm.SetInitialStateTo(stateId1, stateId2);
+            hsm.SetInitialStateTo(stateId2, stateId3);
+
+            hsm.Start();
+
+            hsm.Stop();
+
+            Received.InOrder(() => {
+                stateObj3.Exit();
+                stateObj2.Exit();
+                stateObj1.Exit();
+            });
+        }
+
+        [Test]
+        public void Update_States_In_The_Active_Hierarchy_Path()
+        {
+            var hsm = new HSM<int, int>();
+
+            int stateId1 = 1;
+            int stateId2 = 2;
+            int stateId3 = 3;
+
+            var stateObj = Substitute.For<IState>();
+
+            hsm.AddState(stateId1, stateObj);
+            hsm.AddState(stateId2, stateObj);
+            hsm.AddState(stateId3, stateObj);
+
+            hsm.EstablishSubstateRelation(stateId1, stateId2);
+            hsm.EstablishSubstateRelation(stateId2, stateId3);
+
+            hsm.InitialState = stateId1;
+
+            hsm.SetInitialStateTo(stateId1, stateId2);
+            hsm.SetInitialStateTo(stateId2, stateId3);
+
+            hsm.Start();
+
+            hsm.Update();
+
+            stateObj.Received(hsm.GetActiveHierarchyPath().Count()).Update();
+        }
+
+        [Test]
+        public void Update_States_From_Root_To_Leaf()
+        {
+            var hsm = new HSM<int, int>();
+
+            int stateId1 = 1;
+            int stateId2 = 2;
+            int stateId3 = 3;
+
+            var stateObj1 = Substitute.For<IState>();
+            var stateObj2 = Substitute.For<IState>();
+            var stateObj3 = Substitute.For<IState>();
+
+            hsm.AddState(stateId1, stateObj1);
+            hsm.AddState(stateId2, stateObj2);
+            hsm.AddState(stateId3, stateObj3);
+
+            hsm.EstablishSubstateRelation(stateId1, stateId2);
+            hsm.EstablishSubstateRelation(stateId2, stateId3);
+
+            hsm.InitialState = stateId1;
+
+            hsm.SetInitialStateTo(stateId1, stateId2);
+            hsm.SetInitialStateTo(stateId2, stateId3);
+
+            hsm.Start();
+
+            hsm.Update();
+
+            Received.InOrder(() => {
+                stateObj1.Update();
+                stateObj2.Update();
+                stateObj3.Update();
+            });
         }
     }
 }

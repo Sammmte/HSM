@@ -9,7 +9,7 @@ namespace Paps.FSM.HSM
 
         public int TransitionCount => throw new System.NotImplementedException();
 
-        public bool IsStarted => false;
+        public bool IsStarted { get; private set; }
 
         public TState InitialState
         {
@@ -31,6 +31,7 @@ namespace Paps.FSM.HSM
         private Comparer<TTrigger> _triggerComparer;
 
         private StateHierarchy<TState> _stateHierarchy;
+        private StateHierarchyBehaviourScheduler<TState> _stateHierarchyBehaviourScheduler;
         private TransitionManager<TState, TTrigger> _transitionManager;
 
         public HSM(IEqualityComparer<TState> stateComparer, IEqualityComparer<TTrigger> triggerComparer)
@@ -45,6 +46,7 @@ namespace Paps.FSM.HSM
             SetTriggerComparer(triggerComparer);
 
             _stateHierarchy = new StateHierarchy<TState>(_stateComparer);
+            _stateHierarchyBehaviourScheduler = new StateHierarchyBehaviourScheduler<TState>(_stateHierarchy, _stateComparer);
             _transitionManager = new TransitionManager<TState, TTrigger>(_stateHierarchy, _stateComparer, _triggerComparer);
         }
 
@@ -100,7 +102,7 @@ namespace Paps.FSM.HSM
 
         public IEnumerable<TState> GetActiveHierarchyPath()
         {
-            throw new System.NotImplementedException();
+            return _stateHierarchyBehaviourScheduler.GetActiveHierarchyPath();
         }
 
         public KeyValuePair<Transition<TState, TTrigger>, IGuardCondition[]>[] GetGuardConditions()
@@ -160,12 +162,25 @@ namespace Paps.FSM.HSM
 
         public void Start()
         {
-            throw new System.NotImplementedException();
+            try
+            {
+                IsStarted = true;
+
+                _stateHierarchyBehaviourScheduler.Enter();
+            }
+            catch(InvalidInitialStateException)
+            {
+                IsStarted = false;
+
+                throw;
+            }
         }
 
         public void Stop()
         {
-            throw new System.NotImplementedException();
+            _stateHierarchyBehaviourScheduler.Exit();
+
+            IsStarted = false;
         }
 
         public void Trigger(TTrigger trigger)
@@ -175,7 +190,7 @@ namespace Paps.FSM.HSM
 
         public void Update()
         {
-            throw new System.NotImplementedException();
+            _stateHierarchyBehaviourScheduler.Update();
         }
 
         public TState[] GetImmediateChildsOf(TState parent)
