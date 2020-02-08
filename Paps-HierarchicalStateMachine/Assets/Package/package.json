@@ -1,0 +1,20 @@
+{
+  "name": "paps.fsm.hsm",
+  "version": "0.0.1-unity",
+  "displayName": "Paps FSM",
+  "unity": "2019.2",
+  "description": "A hierarchical state machine made in c#",
+  "keywords": [
+	  "c#",
+    "fsm",
+    "hsm",
+    "hierarchical state machine",
+	  "paps",
+	  "unity"
+  ],
+  "author": {
+	"name": "Santiago Perez"
+  },
+  "license": "WTFPL",
+  "homepage": "https://github.com/Sammmte/HSM"
+}
