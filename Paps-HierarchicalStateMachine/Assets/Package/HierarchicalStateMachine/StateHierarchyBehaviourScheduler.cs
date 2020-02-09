@@ -20,37 +20,9 @@ namespace Paps.StateMachines
 
         public void Enter()
         {
-            //ValidateInitialStatesStartingFrom(_stateHierarchy.InitialState);
-
             AddFrom(_stateHierarchy.InitialState);
 
             ExecuteEnterEventsFrom(_stateHierarchy.InitialState);
-        }
-
-        private void ValidateInitialStatesStartingFrom(TState stateId)
-        {
-            var current = stateId;
-
-            while(true)
-            {
-                if (_stateHierarchy.ContainsState(current))
-                {
-                    if (_stateHierarchy.HasChilds(current))
-                    {
-                        var initialStateOfCurrent = _stateHierarchy.GetInitialStateOf(current);
-
-                        if (_stateHierarchy.AreImmediateParentAndChild(current, initialStateOfCurrent))
-                        {
-                            current = initialStateOfCurrent;
-                        }
-                        else throw new InvalidInitialStateException(
-                            "Invalid initial state. Parent with id " + current + " has not a child state with id " + initialStateOfCurrent);
-                    }
-                    else return;
-                }
-                else throw new InvalidInitialStateException(
-                            "Invalid initial state. Parent with id " + current + " was not added to state machine");
-            }
         }
 
         private void AddFrom(TState stateId)
@@ -130,6 +102,17 @@ namespace Paps.StateMachines
             }
 
             return array;
+        }
+
+        public bool IsInState(TState stateId)
+        {
+            for(int i = 0; i < _activeHierarchyPath.Count; i++)
+            {
+                if (AreEquals(_activeHierarchyPath[i].Key, stateId))
+                    return true;
+            }
+
+            return false;
         }
     }
 }
