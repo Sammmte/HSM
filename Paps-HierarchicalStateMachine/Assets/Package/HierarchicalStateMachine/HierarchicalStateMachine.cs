@@ -157,7 +157,7 @@ namespace Paps.StateMachines
             throw new System.NotImplementedException();
         }
 
-        public void AddChildTo(TState superState, TState substate)
+        public void SetChildTo(TState superState, TState substate)
         {
             _stateHierarchy.AddChildTo(superState, substate);
         }

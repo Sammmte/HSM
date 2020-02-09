@@ -8,7 +8,7 @@ namespace Paps.StateMachines
         event HierarchyChanged<TState> OnBeforeHierarchyChanges;
         event HierarchyChanged<TState> OnHierarchyChanged;
 
-        void AddChildTo(TState parentState, TState substate);
+        void SetChildTo(TState parentState, TState substate);
         bool RemoveChildFrom(TState parentState, TState substate);
 
         bool AreImmediateParentAndChild(TState parentState, TState substate);

@@ -308,6 +308,52 @@ namespace Paps.StateMachines
             return NodeOf(stateId).Childs.Count;
         }
 
+        public bool AreSiblings(TState stateId1, TState stateId2)
+        {
+            ValidateContainsId(stateId1);
+            ValidateContainsId(stateId2);
+
+            return NodeOf(stateId1).Parent == NodeOf(stateId2).Parent;
+        }
+
+        public bool AreCousins(TState stateId1, TState stateId2)
+        {
+            ValidateContainsId(stateId1);
+            ValidateContainsId(stateId2);
+
+            if(IsRoot(stateId1) == false)
+            {
+                if(IsRoot(stateId2) == false)
+                {
+                    var parent1 = GetParentOf(stateId1);
+                    var parent2 = GetParentOf(stateId2);
+
+                    return AreSiblings(parent1, parent2);
+                }
+            }
+
+            return false;
+        }
+
+        public bool AreParentAndChildAtAnyLevel(TState parent, TState child)
+        {
+            ValidateContainsId(parent);
+            ValidateContainsId(child);
+
+            var node = NodeOf(parent);
+
+            if (AreImmediateParentAndChild(node.StateId, child))
+                return true;
+
+            foreach (var childId in node.Childs.Keys)
+            {
+                if (AreParentAndChildAtAnyLevel(childId, child))
+                    return true;
+            }
+
+            return false;
+        }
+
         private class StateHierarchyNode
         {
             public readonly TState StateId;
