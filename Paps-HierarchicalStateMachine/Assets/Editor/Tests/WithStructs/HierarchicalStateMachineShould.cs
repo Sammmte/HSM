@@ -10,23 +10,14 @@ namespace Tests.WithStructs
 {
     public class HierarchicalStateMachineShould
     {
-        private static void AssertDoesNotContains(object notExpected, ICollection collection)
+        private static HierarchicalStateMachine<int, int> NewStateMachine()
         {
-            try
-            {
-                Assert.Contains(notExpected, collection);
-            }
-            catch(AssertionException)
-            {
-                return;
-            }
-
-            throw new AssertionException("expected collection not to contain " + notExpected);
+            return new HierarchicalStateMachine<int, int>();
         }
 
-        private static void AssertContains<T>(T expected, IEnumerable<T> enumerable)
+        private static Transition<int, int> NewTransition(int stateFrom, int trigger, int stateTo)
         {
-            if (enumerable.Contains(expected) == false) throw new AssertionException("Enumerable does not contains expected value " + expected);
+            return new Transition<int, int>(stateFrom, trigger, stateTo);
         }
 
         [Test]
@@ -325,7 +316,7 @@ namespace Tests.WithStructs
 
             Assert.Contains(stateId1, roots);
             Assert.Contains(stateId3, roots);
-            AssertDoesNotContains(stateId2, roots);
+            AssertExtensions.DoesNotContains(stateId2, roots);
         }
 
         [Test]
@@ -434,7 +425,7 @@ namespace Tests.WithStructs
 
             Assert.Contains(stateId2, childs);
             Assert.Contains(stateId3, childs);
-            AssertDoesNotContains(stateId4, childs);
+            AssertExtensions.DoesNotContains(stateId4, childs);
         }
 
         [Test]
@@ -627,7 +618,7 @@ namespace Tests.WithStructs
 
             Assert.Contains(stateId1, roots);
             Assert.Contains(stateId3, roots);
-            AssertDoesNotContains(stateId2, roots);
+            AssertExtensions.DoesNotContains(stateId2, roots);
         }
 
         [Test]
@@ -720,9 +711,9 @@ namespace Tests.WithStructs
 
             var activeHierarchyPath = hsm.GetActiveHierarchyPath();
 
-            AssertContains(stateId1, activeHierarchyPath);
-            AssertContains(stateId2, activeHierarchyPath);
-            AssertContains(stateId3, activeHierarchyPath);
+            AssertExtensions.Contains(stateId1, activeHierarchyPath);
+            AssertExtensions.Contains(stateId2, activeHierarchyPath);
+            AssertExtensions.Contains(stateId3, activeHierarchyPath);
         }
 
         [Test]
@@ -927,6 +918,191 @@ namespace Tests.WithStructs
             hsm.RemoveChildFrom(stateId1, stateId2);
 
             Assert.AreEqual(default(int), hsm.GetInitialStateOf(stateId1));
+        }
+
+        [Test]
+        public void Return_If_Is_In_A_Specific_State()
+        {
+            var hsm = new HierarchicalStateMachine<int, int>();
+
+            int stateId1 = 1;
+            int stateId2 = 2;
+            int stateId3 = 3;
+
+            var stateObj1 = Substitute.For<IState>();
+            var stateObj2 = Substitute.For<IState>();
+            var stateObj3 = Substitute.For<IState>();
+
+            hsm.AddState(stateId1, stateObj1);
+            hsm.AddState(stateId2, stateObj2);
+            hsm.AddState(stateId3, stateObj3);
+
+            hsm.SetChildTo(stateId1, stateId2);
+
+            hsm.InitialState = stateId1;
+
+            hsm.SetInitialStateTo(stateId1, stateId2);
+
+            hsm.Start();
+
+            Assert.That(hsm.IsInState(stateId1), "Is in " + stateId1);
+            Assert.That(hsm.IsInState(stateId2), "Is in " + stateId2);
+            Assert.That(hsm.IsInState(stateId3) == false, "Is not in " + stateId3);
+        }
+
+        [Test]
+        public void Throw_An_Exception_If_User_Tries_To_Start_The_State_Machine_When_It_Is_Already_Started()
+        {
+            var hsm = new HierarchicalStateMachine<int, int>();
+
+            var stateId1 = 1;
+
+            var stateObj = Substitute.For<IState>();
+
+            hsm.AddState(stateId1, stateObj);
+
+            hsm.Start();
+
+            Assert.Throws<StateMachineStartedException>(() => hsm.Start());
+        }
+
+        [Test]
+        public void Throw_An_Exception_If_User_Tries_To_Start_The_State_Machine_With_No_State_Added()
+        {
+            var hsm = new HierarchicalStateMachine<int, int>();
+
+            Assert.Throws<EmptyStateMachineException>(() => hsm.Start());
+        }
+
+        [Test]
+        public void Do_Nothing_If_User_Tries_To_Stop_The_State_Machine_Without_Been_Started()
+        {
+            var hsm = new HierarchicalStateMachine<int, int>();
+
+            Assert.DoesNotThrow(() => hsm.Stop());
+        }
+
+        [Test]
+        public void Add_Transitions()
+        {
+            var hsm = new HierarchicalStateMachine<int, int>();
+
+            int stateId1 = 1;
+            int stateId2 = 2;
+
+            var stateObj = Substitute.For<IState>();
+
+            int trigger = 0;
+
+            var transition = new Transition<int, int>(stateId1, trigger, stateId2);
+
+            hsm.AddState(stateId1, stateObj);
+            hsm.AddState(stateId2, stateObj);
+
+            hsm.AddTransition(transition);
+
+            Assert.That(hsm.ContainsTransition(transition), "Contains transition");
+        }
+
+        [Test]
+        public void Do_Nothing_If_User_Tries_To_Add_The_Same_Transition_Twice()
+        {
+            var hsm = new HierarchicalStateMachine<int, int>();
+
+            int stateId1 = 1;
+            int stateId2 = 2;
+
+            var stateObj = Substitute.For<IState>();
+
+            int trigger = 0;
+
+            var transition = new Transition<int, int>(stateId1, trigger, stateId2);
+
+            hsm.AddState(stateId1, stateObj);
+            hsm.AddState(stateId2, stateObj);
+
+            hsm.AddTransition(transition);
+
+            Assert.DoesNotThrow(() => hsm.AddTransition(transition));
+            Assert.That(hsm.TransitionCount == 1, "Only has 1 transition");
+        }
+
+        [Test]
+        public void Throw_An_Exception_If_User_Tries_To_Add_Transition_With_State_Ids_That_Were_Not_Added()
+        {
+            var hsm = new HierarchicalStateMachine<int, int>();
+
+            int stateId1 = 1;
+            int stateId2 = 2;
+
+            var stateObj = Substitute.For<IState>();
+
+            int trigger = 0;
+
+            var transition = new Transition<int, int>(stateId1, trigger, stateId2);
+
+            Assert.Throws<StateIdNotAddedException>(() => hsm.AddTransition(transition));
+
+            hsm.AddState(stateId1, stateObj);
+
+            Assert.Throws<StateIdNotAddedException>(() => hsm.AddTransition(transition));
+
+            hsm.RemoveState(stateId1);
+
+            hsm.AddState(stateId2, stateObj);
+
+            Assert.Throws<StateIdNotAddedException>(() => hsm.AddTransition(transition));
+        }
+
+        [Test]
+        public void Remove_Transitions()
+        {
+            var hsm = new HierarchicalStateMachine<int, int>();
+
+            int stateId1 = 1;
+            int stateId2 = 2;
+
+            var stateObj = Substitute.For<IState>();
+
+            int trigger = 0;
+
+            var transition = new Transition<int, int>(stateId1, trigger, stateId2);
+
+            hsm.AddState(stateId1, stateObj);
+            hsm.AddState(stateId2, stateObj);
+
+            hsm.AddTransition(transition);
+
+            hsm.RemoveTransition(transition);
+
+            Assert.That(hsm.ContainsTransition(transition) == false, "Does not contains transition");
+        }
+
+        [Test]
+        public void Return_Transitions()
+        {
+            var hsm = new HierarchicalStateMachine<int, int>();
+
+            int stateId1 = 1;
+            int stateId2 = 2;
+
+            var stateObj = Substitute.For<IState>();
+
+            int trigger = 0;
+
+            var transition1 = new Transition<int, int>(stateId1, trigger, stateId2);
+            var transition2 = new Transition<int, int>(stateId2, trigger, stateId1);
+
+            hsm.AddState(stateId1, stateObj);
+            hsm.AddState(stateId2, stateObj);
+
+            hsm.AddTransition(transition1);
+            hsm.AddTransition(transition2);
+
+            var transitions = hsm.GetTransitions();
+
+            Assert.Contains(transition1, transitions);
+            Assert.Contains(transition2, transitions);
         }
     }
 }

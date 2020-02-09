@@ -8,7 +8,7 @@ namespace Paps.StateMachines
     {
         public int StateCount => _stateHierarchy.StateCount;
 
-        public int TransitionCount => throw new System.NotImplementedException();
+        public int TransitionCount => _transitions.Count;
 
         public bool IsStarted { get; private set; }
 
@@ -32,7 +32,7 @@ namespace Paps.StateMachines
 
         private Comparer<TState> _stateComparer;
         private Comparer<TTrigger> _triggerComparer;
-        private TransitionEqualityComparer _transitionEqualityComparer;
+        private TransitionEqualityComparer<TState, TTrigger> _transitionEqualityComparer;
 
         private StateHierarchy<TState> _stateHierarchy;
         private StateHierarchyBehaviourScheduler<TState> _stateHierarchyBehaviourScheduler;
@@ -46,7 +46,7 @@ namespace Paps.StateMachines
 
             _stateComparer = new Comparer<TState>();
             _triggerComparer = new Comparer<TTrigger>();
-            _transitionEqualityComparer = new TransitionEqualityComparer(_stateComparer, _triggerComparer);
+            _transitionEqualityComparer = new TransitionEqualityComparer<TState, TTrigger>(_stateComparer, _triggerComparer);
 
             SetStateComparer(stateComparer);
             SetTriggerComparer(triggerComparer);
@@ -180,6 +180,9 @@ namespace Paps.StateMachines
 
         public void Start()
         {
+            if (IsStarted) throw new StateMachineStartedException();
+            if (StateCount == 0) throw new EmptyStateMachineException();
+
             try
             {
                 IsStarted = true;
@@ -196,9 +199,12 @@ namespace Paps.StateMachines
 
         public void Stop()
         {
-            _stateHierarchyBehaviourScheduler.Exit();
+            if(IsStarted)
+            {
+                _stateHierarchyBehaviourScheduler.Exit();
 
-            IsStarted = false;
+                IsStarted = false;
+            }
         }
 
         public void Trigger(TTrigger trigger)
@@ -289,31 +295,6 @@ namespace Paps.StateMachines
             }
         }
 
-        private class TransitionEqualityComparer : IEqualityComparer<Transition<TState, TTrigger>>
-        {
-            public IEqualityComparer<TState> StateComparer;
-            public IEqualityComparer<TTrigger> TriggerComparer;
-
-            public TransitionEqualityComparer(IEqualityComparer<TState> stateComparer, IEqualityComparer<TTrigger> triggerComparer)
-            {
-                StateComparer = stateComparer;
-                TriggerComparer = triggerComparer;
-            }
-
-            public bool Equals(Transition<TState, TTrigger> x, Transition<TState, TTrigger> y)
-            {
-                return StateComparer.Equals(x.StateFrom, y.StateFrom) && TriggerComparer.Equals(x.Trigger, y.Trigger) && StateComparer.Equals(x.StateTo, y.StateTo);
-            }
-
-            public int GetHashCode(Transition<TState, TTrigger> obj)
-            {
-                return (obj.StateFrom, obj.Trigger, obj.StateTo).GetHashCode();
-            }
-
-            public bool Equals(Transition<TState, TTrigger> transition, TState stateFrom, TTrigger trigger, TState stateTo)
-            {
-                return StateComparer.Equals(transition.StateFrom, stateFrom) && TriggerComparer.Equals(transition.Trigger, trigger) && StateComparer.Equals(transition.StateTo, stateTo);
-            }
-        }
+        
     }
 }
