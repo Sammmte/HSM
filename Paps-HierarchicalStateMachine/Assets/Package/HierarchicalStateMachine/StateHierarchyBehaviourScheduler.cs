@@ -20,7 +20,7 @@ namespace Paps.StateMachines
 
         public void Enter()
         {
-            ValidateInitialStatesStartingFrom(_stateHierarchy.InitialState);
+            //ValidateInitialStatesStartingFrom(_stateHierarchy.InitialState);
 
             AddFrom(_stateHierarchy.InitialState);
 

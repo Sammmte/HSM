@@ -141,10 +141,10 @@ namespace Tests.WithStructs
             hsm.AddState(stateId3, stateObj);
             hsm.AddState(stateId4, stateObj);
 
-            hsm.EstablishSubstateRelation(stateId1, stateId2);
-            hsm.EstablishSubstateRelation(stateId2, stateId3);
+            hsm.AddChildTo(stateId1, stateId2);
+            hsm.AddChildTo(stateId2, stateId3);
 
-            hsm.EstablishSubstateRelation(stateId1, stateId4);
+            hsm.AddChildTo(stateId1, stateId4);
 
             Assert.IsTrue(hsm.AreImmediateParentAndChild(stateId1, stateId2));
             Assert.IsTrue(hsm.AreImmediateParentAndChild(stateId1, stateId4));
@@ -162,17 +162,17 @@ namespace Tests.WithStructs
 
             var stateObj = Substitute.For<IState>();
 
-            Assert.Throws<StateIdNotAddedException>(() => hsm.EstablishSubstateRelation(stateId1, stateId2));
-            Assert.Throws<StateIdNotAddedException>(() => hsm.EstablishSubstateRelation(stateId2, stateId1));
+            Assert.Throws<StateIdNotAddedException>(() => hsm.AddChildTo(stateId1, stateId2));
+            Assert.Throws<StateIdNotAddedException>(() => hsm.AddChildTo(stateId2, stateId1));
 
             hsm.AddState(stateId1, stateObj);
 
-            Assert.Throws<StateIdNotAddedException>(() => hsm.EstablishSubstateRelation(stateId1, stateId2));
-            Assert.Throws<StateIdNotAddedException>(() => hsm.EstablishSubstateRelation(stateId2, stateId1));
+            Assert.Throws<StateIdNotAddedException>(() => hsm.AddChildTo(stateId1, stateId2));
+            Assert.Throws<StateIdNotAddedException>(() => hsm.AddChildTo(stateId2, stateId1));
 
             hsm.AddState(stateId2, stateObj);
 
-            Assert.DoesNotThrow(() => hsm.EstablishSubstateRelation(stateId1, stateId2));
+            Assert.DoesNotThrow(() => hsm.AddChildTo(stateId1, stateId2));
         }
 
         [Test]
@@ -188,9 +188,9 @@ namespace Tests.WithStructs
             hsm.AddState(stateId1, stateObj);
             hsm.AddState(stateId2, stateObj);
 
-            hsm.EstablishSubstateRelation(stateId1, stateId2);
+            hsm.AddChildTo(stateId1, stateId2);
             
-            Assert.DoesNotThrow(() => hsm.EstablishSubstateRelation(stateId1, stateId2));
+            Assert.DoesNotThrow(() => hsm.AddChildTo(stateId1, stateId2));
         }
 
         [Test]
@@ -204,7 +204,7 @@ namespace Tests.WithStructs
 
             hsm.AddState(stateId, stateObj);
 
-            Assert.Throws<InvalidSubstateRelationException>(() => hsm.EstablishSubstateRelation(stateId, stateId));
+            Assert.Throws<CannotAddChildException>(() => hsm.AddChildTo(stateId, stateId));
         }
 
         [Test]
@@ -222,9 +222,9 @@ namespace Tests.WithStructs
             hsm.AddState(stateId2, stateObj);
             hsm.AddState(stateId3, stateObj);
 
-            hsm.EstablishSubstateRelation(stateId2, stateId3);
+            hsm.AddChildTo(stateId2, stateId3);
 
-            Assert.Throws<InvalidSubstateRelationException>(() => hsm.EstablishSubstateRelation(stateId1, stateId3));
+            Assert.Throws<CannotAddChildException>(() => hsm.AddChildTo(stateId1, stateId3));
         }
 
         [Test]
@@ -240,9 +240,9 @@ namespace Tests.WithStructs
             hsm.AddState(stateId1, stateObj);
             hsm.AddState(stateId2, stateObj);
 
-            hsm.EstablishSubstateRelation(stateId1, stateId2);
+            hsm.AddChildTo(stateId1, stateId2);
 
-            Assert.Throws<InvalidSubstateRelationException>(() => hsm.EstablishSubstateRelation(stateId2, stateId1));
+            Assert.Throws<CannotAddChildException>(() => hsm.AddChildTo(stateId2, stateId1));
         }
 
         [Test]
@@ -258,9 +258,9 @@ namespace Tests.WithStructs
             hsm.AddState(stateId1, stateObj);
             hsm.AddState(stateId2, stateObj);
 
-            hsm.EstablishSubstateRelation(stateId1, stateId2);
+            hsm.AddChildTo(stateId1, stateId2);
 
-            hsm.BreakSubstateRelation(stateId1, stateId2);
+            hsm.RemoveChildFrom(stateId1, stateId2);
 
             Assert.That(hsm.AreImmediateParentAndChild(stateId1, stateId2) == false, "Are not immediate relatives");
         }
@@ -280,8 +280,8 @@ namespace Tests.WithStructs
             hsm.AddState(stateId2, stateObj);
             hsm.AddState(stateId3, stateObj);
 
-            hsm.EstablishSubstateRelation(stateId1, stateId2);
-            hsm.EstablishSubstateRelation(stateId2, stateId3);
+            hsm.AddChildTo(stateId1, stateId2);
+            hsm.AddChildTo(stateId2, stateId3);
 
             Assert.IsFalse(hsm.AreImmediateParentAndChild(stateId1, stateId3));
         }
@@ -299,7 +299,7 @@ namespace Tests.WithStructs
             hsm.AddState(stateId1, stateObj);
             hsm.AddState(stateId2, stateObj);
 
-            hsm.EstablishSubstateRelation(stateId1, stateId2);
+            hsm.AddChildTo(stateId1, stateId2);
 
             Assert.IsTrue(hsm.AreImmediateParentAndChild(stateId1, stateId2));
         }
@@ -319,7 +319,7 @@ namespace Tests.WithStructs
             hsm.AddState(stateId2, stateObj);
             hsm.AddState(stateId3, stateObj);
 
-            hsm.EstablishSubstateRelation(stateId1, stateId2);
+            hsm.AddChildTo(stateId1, stateId2);
 
             var roots = hsm.GetRoots();
 
@@ -349,7 +349,7 @@ namespace Tests.WithStructs
             hsm.AddState(stateId1, stateObj);
             hsm.AddState(stateId2, stateObj);
 
-            hsm.EstablishSubstateRelation(stateId1, stateId2);
+            hsm.AddChildTo(stateId1, stateId2);
 
             var parent = hsm.GetParentOf(stateId2);
 
@@ -425,10 +425,10 @@ namespace Tests.WithStructs
             hsm.AddState(stateId3, stateObj);
             hsm.AddState(stateId4, stateObj);
 
-            hsm.EstablishSubstateRelation(stateId1, stateId2);
-            hsm.EstablishSubstateRelation(stateId1, stateId3);
+            hsm.AddChildTo(stateId1, stateId2);
+            hsm.AddChildTo(stateId1, stateId3);
 
-            hsm.EstablishSubstateRelation(stateId2, stateId4);
+            hsm.AddChildTo(stateId2, stateId4);
 
             var childs = hsm.GetImmediateChildsOf(stateId1);
 
@@ -489,15 +489,20 @@ namespace Tests.WithStructs
 
             int stateId1 = 1;
             int stateId2 = 2;
+            int stateId3 = 3;
 
             var stateObj = Substitute.For<IState>();
 
             hsm.AddState(stateId1, stateObj);
             hsm.AddState(stateId2, stateObj);
+            hsm.AddState(stateId3, stateObj);
 
-            hsm.SetInitialStateTo(stateId1, stateId2);
+            hsm.AddChildTo(stateId1, stateId2);
+            hsm.AddChildTo(stateId1, stateId3);
 
-            Assert.AreEqual(stateId2, hsm.GetInitialStateOf(stateId1));
+            hsm.SetInitialStateTo(stateId1, stateId3);
+
+            Assert.AreEqual(stateId3, hsm.GetInitialStateOf(stateId1));
         }
 
         [Test]
@@ -546,9 +551,9 @@ namespace Tests.WithStructs
             hsm.AddState(stateId1, stateObj);
             hsm.AddState(stateId2, stateObj);
 
-            hsm.EstablishSubstateRelation(stateId1, stateId2);
+            hsm.AddChildTo(stateId1, stateId2);
 
-            hsm.BreakSubstateRelation(stateId1, stateId2);
+            hsm.RemoveChildFrom(stateId1, stateId2);
 
             var roots = hsm.GetRoots();
 
@@ -569,9 +574,9 @@ namespace Tests.WithStructs
             hsm.AddState(stateId1, stateObj);
             hsm.AddState(stateId2, stateObj);
 
-            hsm.EstablishSubstateRelation(stateId1, stateId2);
+            hsm.AddChildTo(stateId1, stateId2);
 
-            hsm.BreakSubstateRelation(stateId1, stateId2);
+            hsm.RemoveChildFrom(stateId1, stateId2);
 
             Assert.That(hsm.GetParentOf(stateId2) == stateId2, "Child has no parent after break substate relation");
         }
@@ -589,9 +594,9 @@ namespace Tests.WithStructs
             hsm.AddState(stateId1, stateObj);
             hsm.AddState(stateId2, stateObj);
 
-            hsm.EstablishSubstateRelation(stateId1, stateId2);
+            hsm.AddChildTo(stateId1, stateId2);
 
-            hsm.BreakSubstateRelation(stateId1, stateId2);
+            hsm.RemoveChildFrom(stateId1, stateId2);
 
             var childs = hsm.GetImmediateChildsOf(stateId1);
 
@@ -599,7 +604,7 @@ namespace Tests.WithStructs
         }
 
         [Test]
-        public void Break_All_Substate_Relations_Related_To_A_State_When_It_Is_Removed()
+        public void Remove_All_Child_From_A_State_When_It_Is_Removed()
         {
             var hsm = new HierarchicalStateMachine<int, int>();
 
@@ -613,8 +618,8 @@ namespace Tests.WithStructs
             hsm.AddState(stateId2, stateObj);
             hsm.AddState(stateId3, stateObj);
 
-            hsm.EstablishSubstateRelation(stateId1, stateId2);
-            hsm.EstablishSubstateRelation(stateId2, stateId3);
+            hsm.AddChildTo(stateId1, stateId2);
+            hsm.AddChildTo(stateId2, stateId3);
 
             hsm.RemoveState(stateId2);
 
@@ -640,8 +645,8 @@ namespace Tests.WithStructs
             hsm.AddState(stateId2, stateObj);
             hsm.AddState(stateId3, stateObj);
 
-            hsm.EstablishSubstateRelation(stateId1, stateId2);
-            hsm.EstablishSubstateRelation(stateId2, stateId3);
+            hsm.AddChildTo(stateId1, stateId2);
+            hsm.AddChildTo(stateId2, stateId3);
 
             hsm.InitialState = stateId1;
 
@@ -671,8 +676,8 @@ namespace Tests.WithStructs
             hsm.AddState(stateId2, stateObj2);
             hsm.AddState(stateId3, stateObj3);
 
-            hsm.EstablishSubstateRelation(stateId1, stateId2);
-            hsm.EstablishSubstateRelation(stateId2, stateId3);
+            hsm.AddChildTo(stateId1, stateId2);
+            hsm.AddChildTo(stateId2, stateId3);
 
             hsm.InitialState = stateId1;
 
@@ -703,8 +708,8 @@ namespace Tests.WithStructs
             hsm.AddState(stateId2, stateObj);
             hsm.AddState(stateId3, stateObj);
 
-            hsm.EstablishSubstateRelation(stateId1, stateId2);
-            hsm.EstablishSubstateRelation(stateId2, stateId3);
+            hsm.AddChildTo(stateId1, stateId2);
+            hsm.AddChildTo(stateId2, stateId3);
 
             hsm.InitialState = stateId1;
 
@@ -718,60 +723,6 @@ namespace Tests.WithStructs
             AssertContains(stateId1, activeHierarchyPath);
             AssertContains(stateId2, activeHierarchyPath);
             AssertContains(stateId3, activeHierarchyPath);
-        }
-
-        [Test]
-        public void Throw_An_Exception_If_A_State_With_Childs_Does_Not_Contains_Its_Initial_State_On_Start()
-        {
-            var hsm = new HierarchicalStateMachine<int, int>();
-
-            int stateId1 = 1;
-            int stateId2 = 2;
-            int stateId3 = 3;
-
-            var stateObj = Substitute.For<IState>();
-
-            hsm.AddState(stateId1, stateObj);
-            hsm.AddState(stateId2, stateObj);
-            hsm.AddState(stateId3, stateObj);
-
-            hsm.EstablishSubstateRelation(stateId1, stateId2);
-            hsm.EstablishSubstateRelation(stateId2, stateId3);
-
-            hsm.InitialState = stateId1;
-
-            hsm.SetInitialStateTo(stateId1, stateId2);
-
-            Assert.Throws<InvalidInitialStateException>(() => hsm.Start());
-
-            stateObj.DidNotReceive().Enter();
-        }
-
-        [Test]
-        public void Throw_An_Exception_If_Any_Candidate_To_Initial_Active_Hierarchy_Path_Is_Not_Added_To_The_State_Machine_On_Start()
-        {
-            var hsm = new HierarchicalStateMachine<int, int>();
-
-            int stateId1 = 1;
-            int stateId2 = 2;
-            int stateId3 = 3;
-            int stateIdNotAdded = 4;
-
-            var stateObj = Substitute.For<IState>();
-
-            hsm.AddState(stateId1, stateObj);
-            hsm.AddState(stateId2, stateObj);
-            hsm.AddState(stateId3, stateObj);
-
-            hsm.EstablishSubstateRelation(stateId1, stateId2);
-            hsm.EstablishSubstateRelation(stateId2, stateId3);
-
-            hsm.InitialState = stateId1;
-
-            hsm.SetInitialStateTo(stateId1, stateId2);
-            hsm.SetInitialStateTo(stateId2, stateIdNotAdded);
-
-            Assert.Throws<InvalidInitialStateException>(() => hsm.Start());
         }
 
         [Test]
@@ -789,8 +740,8 @@ namespace Tests.WithStructs
             hsm.AddState(stateId2, stateObj);
             hsm.AddState(stateId3, stateObj);
 
-            hsm.EstablishSubstateRelation(stateId1, stateId2);
-            hsm.EstablishSubstateRelation(stateId2, stateId3);
+            hsm.AddChildTo(stateId1, stateId2);
+            hsm.AddChildTo(stateId2, stateId3);
 
             hsm.InitialState = stateId1;
 
@@ -825,8 +776,8 @@ namespace Tests.WithStructs
             hsm.AddState(stateId2, stateObj2);
             hsm.AddState(stateId3, stateObj3);
 
-            hsm.EstablishSubstateRelation(stateId1, stateId2);
-            hsm.EstablishSubstateRelation(stateId2, stateId3);
+            hsm.AddChildTo(stateId1, stateId2);
+            hsm.AddChildTo(stateId2, stateId3);
 
             hsm.InitialState = stateId1;
 
@@ -859,8 +810,8 @@ namespace Tests.WithStructs
             hsm.AddState(stateId2, stateObj);
             hsm.AddState(stateId3, stateObj);
 
-            hsm.EstablishSubstateRelation(stateId1, stateId2);
-            hsm.EstablishSubstateRelation(stateId2, stateId3);
+            hsm.AddChildTo(stateId1, stateId2);
+            hsm.AddChildTo(stateId2, stateId3);
 
             hsm.InitialState = stateId1;
 
@@ -891,8 +842,8 @@ namespace Tests.WithStructs
             hsm.AddState(stateId2, stateObj2);
             hsm.AddState(stateId3, stateObj3);
 
-            hsm.EstablishSubstateRelation(stateId1, stateId2);
-            hsm.EstablishSubstateRelation(stateId2, stateId3);
+            hsm.AddChildTo(stateId1, stateId2);
+            hsm.AddChildTo(stateId2, stateId3);
 
             hsm.InitialState = stateId1;
 
@@ -908,6 +859,74 @@ namespace Tests.WithStructs
                 stateObj2.Update();
                 stateObj3.Update();
             });
+        }
+
+        [Test]
+        public void Set_Initial_State_Automatically_When_The_First_State_Is_Added()
+        {
+            var hsm = new HierarchicalStateMachine<int, int>();
+
+            int stateId = 1;
+
+            var stateObj = Substitute.For<IState>();
+
+            hsm.AddState(stateId, stateObj);
+
+            Assert.AreEqual(stateId, hsm.InitialState);
+        }
+
+        [Test]
+        public void Reset_To_Default_Type_Value_After_The_Last_State_Is_Removed()
+        {
+            var hsm = new HierarchicalStateMachine<int, int>();
+
+            int stateId = 1;
+
+            var stateObj = Substitute.For<IState>();
+
+            hsm.AddState(stateId, stateObj);
+
+            hsm.RemoveState(stateId);
+
+            Assert.AreEqual(default(int), hsm.InitialState);
+        }
+
+        [Test]
+        public void Set_Initial_State_Automatically_When_The_First_Child_State_Is_Added_To_A_State()
+        {
+            var hsm = new HierarchicalStateMachine<int, int>();
+
+            int stateId1 = 1;
+            int stateId2 = 2;
+
+            var stateObj = Substitute.For<IState>();
+
+            hsm.AddState(stateId1, stateObj);
+            hsm.AddState(stateId2, stateObj);
+
+            hsm.AddChildTo(stateId1, stateId2);
+
+            Assert.AreEqual(stateId2, hsm.GetInitialStateOf(stateId1));
+        }
+
+        [Test]
+        public void Reset_To_Default_Type_Value_After_The_Last_Child_State_Is_Remove_From_A_State()
+        {
+            var hsm = new HierarchicalStateMachine<int, int>();
+
+            int stateId1 = 1;
+            int stateId2 = 2;
+
+            var stateObj = Substitute.For<IState>();
+
+            hsm.AddState(stateId1, stateObj);
+            hsm.AddState(stateId2, stateObj);
+
+            hsm.AddChildTo(stateId1, stateId2);
+
+            hsm.RemoveChildFrom(stateId1, stateId2);
+
+            Assert.AreEqual(default(int), hsm.GetInitialStateOf(stateId1));
         }
     }
 }

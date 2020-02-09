@@ -20,6 +20,8 @@ namespace Paps.StateMachines
 
             set
             {
+                ValidateContainsId(value);
+
                 _stateHierarchy.InitialState = value;
             }
         }
@@ -140,9 +142,9 @@ namespace Paps.StateMachines
             return _stateHierarchy.RemoveState(stateId);
         }
 
-        public void BreakSubstateRelation(TState superState, TState substate)
+        public bool RemoveChildFrom(TState superState, TState substate)
         {
-            _stateHierarchy.BreakSubstateRelation(superState, substate);
+            return _stateHierarchy.RemoveChildFrom(superState, substate);
         }
 
         public bool RemoveTransition(Transition<TState, TTrigger> transition)
@@ -155,9 +157,9 @@ namespace Paps.StateMachines
             throw new System.NotImplementedException();
         }
 
-        public void EstablishSubstateRelation(TState superState, TState substate)
+        public void AddChildTo(TState superState, TState substate)
         {
-            _stateHierarchy.EstablishSubstateRelation(superState, substate);
+            _stateHierarchy.AddChildTo(superState, substate);
         }
 
         public void Start()
@@ -241,6 +243,11 @@ namespace Paps.StateMachines
         public IStateEventHandler[] GetEventHandlersOf(TState stateId)
         {
             throw new NotImplementedException();
+        }
+
+        private void ValidateContainsId(TState stateId)
+        {
+            if (ContainsState(stateId) == false) throw new StateIdNotAddedException(stateId.ToString());
         }
 
         private class Comparer<T> : IEqualityComparer<T>

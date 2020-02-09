@@ -13,8 +13,23 @@ namespace Paps.StateMachines
         private IEqualityComparer<TState> _stateComparer;
         private Dictionary<TState, StateHierarchyNode> _states;
         private Dictionary<TState, StateHierarchyNode> _roots;
-        
-        public TState InitialState { get; set; }
+
+        private TState _initialState;
+
+        public TState InitialState
+        {
+            get
+            {
+                return _initialState;
+            }
+
+            set
+            {
+                ValidateContainsId(value);
+
+                _initialState = value;
+            }
+        }
 
         public StateHierarchy(IEqualityComparer<TState> stateComparer)
         {
@@ -37,6 +52,11 @@ namespace Paps.StateMachines
 
             _states.Add(stateId, node);
             _roots.Add(stateId, node);
+
+            if(StateCount == 1)
+            {
+                InitialState = stateId;
+            }
         }
 
         private void ValidateStateObjectIsNotNull(IState stateObj)
@@ -53,22 +73,27 @@ namespace Paps.StateMachines
         {
             if(ContainsState(stateId))
             {
-                BreakSubstateRelationsOf(stateId);
+                RemoveChildsOf(stateId);
 
                 _states.Remove(stateId);
                 _roots.Remove(stateId);
+
+                if(StateCount == 0)
+                {
+                    _initialState = default;
+                }
             }
 
             return false;
         }
 
-        private void BreakSubstateRelationsOf(TState stateId)
+        private void RemoveChildsOf(TState stateId)
         {
             var node = NodeOf(stateId);
 
             if (HasParent(node))
             {
-                BreakSubstateRelation(node.Parent.StateId, stateId);
+                RemoveChildFrom(node.Parent.StateId, stateId);
             }
 
             var childs = GetImmediateChildsOf(stateId);
@@ -77,7 +102,7 @@ namespace Paps.StateMachines
             {
                 for (int i = 0; i < childs.Length; i++)
                 {
-                    BreakSubstateRelation(stateId, childs[i]);
+                    RemoveChildFrom(stateId, childs[i]);
                 }
             }
         }
@@ -101,7 +126,7 @@ namespace Paps.StateMachines
             return NodeOf(stateId).Childs.Count > 0;
         }
 
-        public void EstablishSubstateRelation(TState parentId, TState childId)
+        public void AddChildTo(TState parentId, TState childId)
         {
             ValidateContainsId(parentId);
             ValidateContainsId(childId);
@@ -120,6 +145,11 @@ namespace Paps.StateMachines
                 childNode.Parent = parentNode;
 
                 _roots.Remove(childId);
+
+                if(ChildCountOf(parentId) == 1)
+                {
+                    SetInitialStateTo(parentId, childId);
+                }
             }
         }
 
@@ -128,13 +158,13 @@ namespace Paps.StateMachines
             var childNode = NodeOf(childId);
 
             if (HasParent(childNode)) 
-                throw new InvalidSubstateRelationException("State with id " + childId.ToString() + " has parent with id " + childNode.Parent.StateId.ToString());
+                throw new CannotAddChildException("State with id " + childId.ToString() + " has parent with id " + childNode.Parent.StateId.ToString());
         }
 
         private void ValidateParentAndChildAreNotTheSame(TState parentId, TState childId)
         {
             if (AreEquals(parentId, childId)) 
-                throw new InvalidSubstateRelationException("Cannot set substate relation with parent and child with same id");
+                throw new CannotAddChildException("Cannot set substate relation with parent and child with same id");
         }
 
         private void ValidateChildIsNotParentOfParent(TState parentId, TState childId)
@@ -142,10 +172,10 @@ namespace Paps.StateMachines
             var parentNode = NodeOf(parentId);
 
             if (HasParent(parentNode) && AreEquals(parentNode.Parent.StateId, childId))
-                throw new InvalidSubstateRelationException("State with id " + parentId.ToString() + " cannot be parent of " + childId.ToString() + " because the last is parent of the first");
+                throw new CannotAddChildException("State with id " + parentId.ToString() + " cannot be parent of " + childId.ToString() + " because the last is parent of the first");
         }
 
-        public bool BreakSubstateRelation(TState parentId, TState childId)
+        public bool RemoveChildFrom(TState parentId, TState childId)
         {
             ValidateContainsId(parentId);
             ValidateContainsId(childId);
@@ -159,6 +189,11 @@ namespace Paps.StateMachines
                 childNode.Parent = null;
 
                 _roots.Add(childId, childNode);
+
+                if(ChildCountOf(parentId) == 0)
+                {
+                    parentNode.InitialState = default;
+                }
 
                 return true;
             }
@@ -228,6 +263,8 @@ namespace Paps.StateMachines
         public void SetInitialStateTo(TState parentId, TState initialChildId)
         {
             ValidateContainsId(parentId);
+            ValidateContainsId(initialChildId);
+            ValidateAreParentAndChild(parentId, initialChildId);
 
             NodeOf(parentId).InitialState = initialChildId;
         }
@@ -241,7 +278,7 @@ namespace Paps.StateMachines
 
         private void ValidateAreParentAndChild(TState parentId, TState childId)
         {
-            if (AreImmediateParentAndChild(parentId, childId) == false) throw new InvalidSubstateRelationException("State with id " + parentId.ToString() + " is not parent of " + childId.ToString());
+            if (AreImmediateParentAndChild(parentId, childId) == false) throw new InvalidInitialStateException("State with id " + parentId.ToString() + " is not parent of " + childId.ToString());
         }
 
         private void ValidateContainsId(TState stateId)
@@ -262,6 +299,13 @@ namespace Paps.StateMachines
         public bool IsRoot(TState stateId)
         {
             return _roots.ContainsKey(stateId);
+        }
+
+        public int ChildCountOf(TState stateId)
+        {
+            ValidateContainsId(stateId);
+
+            return NodeOf(stateId).Childs.Count;
         }
 
         private class StateHierarchyNode
