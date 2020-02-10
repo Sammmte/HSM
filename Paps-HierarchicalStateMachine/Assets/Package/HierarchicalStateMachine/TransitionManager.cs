@@ -15,6 +15,7 @@ namespace Paps.StateMachines
         private ITransitionValidator<TState, TTrigger> _transitionValidator;
 
         private HashSet<Transition<TState, TTrigger>> _transitions;
+        private Queue<TTrigger> _pendingTriggers;
 
         public TransitionManager(IEqualityComparer<TState> stateComparer, IEqualityComparer<TTrigger> triggerComparer, 
             StateHierarchyBehaviourScheduler<TState> stateHierarchyBehaviourScheduler, ITransitionValidator<TState, TTrigger> transitionValidator)
@@ -48,25 +49,55 @@ namespace Paps.StateMachines
             return _transitions.ToArray();
         }
 
-        public bool Trigger(TState stateFrom, TTrigger trigger)
+        public void Trigger(TTrigger trigger)
         {
-            bool hasOneValid = false;
+            _pendingTriggers.Enqueue(trigger);
 
-            foreach(var transition in _transitions)
+            if (_pendingTriggers.Count == 1)
             {
-                if(Matches(transition, stateFrom, trigger))
+                ProcessPendingTriggers();
+            }
+        }
+
+        private void ProcessPendingTriggers()
+        {
+            while (_pendingTriggers.Count > 0)
+            {
+                var activeHierarchyPath = _stateHierarchyBehaviourScheduler.GetActiveHierarchyPath();
+                var trigger = _pendingTriggers.Dequeue();
+                TState finalStateTo = default;
+            
+                bool hasOneValid = false;
+
+                for (int i = activeHierarchyPath.Count - 1; i >= 0; i--)
                 {
-                    if(_transitionValidator.IsValid(transition))
+                    var stateFrom = activeHierarchyPath[i].Key;
+                
+                    foreach(var transition in _transitions)
                     {
-                        if (hasOneValid) 
-                            throw new MultipleValidTransitionsFromSameStateException(stateFrom.ToString(), trigger.ToString());
-                        else
-                            hasOneValid = true;
+                        if(Matches(transition, stateFrom, trigger))
+                        {
+                            if(_transitionValidator.IsValid(transition))
+                            {
+                                if (hasOneValid)
+                                {
+                                    _pendingTriggers.Clear();
+                                    throw new MultipleValidTransitionsFromSameStateException(stateFrom.ToString(), trigger.ToString());
+                                }
+                                else
+                                {
+                                    hasOneValid = true;
+                                    finalStateTo = transition.StateTo;
+                                }
+                                    
+                            }
+                        }
                     }
                 }
+                
+                if(hasOneValid)
+                    _stateHierarchyBehaviourScheduler.SwitchTo(finalStateTo);
             }
-
-            return hasOneValid;
         }
 
         private bool Matches(Transition<TState, TTrigger> transition, TState stateFrom, TTrigger trigger)

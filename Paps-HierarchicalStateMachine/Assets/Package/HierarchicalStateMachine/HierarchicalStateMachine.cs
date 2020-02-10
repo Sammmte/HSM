@@ -10,7 +10,6 @@ namespace Paps.StateMachines
         {
             Stopped,
             Stopping,
-            Starting,
             Idle,
             EvaluatingTransitions,
             Transitioning,
@@ -57,6 +56,8 @@ namespace Paps.StateMachines
         private TransitionValidator<TState, TTrigger> _transitionValidator;
         private TransitionManager<TState, TTrigger> _transitionManager;
 
+        private InternalState _internalState;
+
         public HierarchicalStateMachine(IEqualityComparer<TState> stateComparer, IEqualityComparer<TTrigger> triggerComparer)
         {
             if (stateComparer == null) throw new ArgumentNullException(nameof(stateComparer));
@@ -71,7 +72,7 @@ namespace Paps.StateMachines
 
             _stateHierarchy = new StateHierarchy<TState>(_stateComparer);
             _stateHierarchyBehaviourScheduler = new StateHierarchyBehaviourScheduler<TState>(_stateHierarchy, _stateComparer);
-            _transitionValidator = new TransitionValidator<TState, TTrigger>(_stateComparer, _triggerComparer);
+            _transitionValidator = new TransitionValidator<TState, TTrigger>(_stateComparer, _triggerComparer, _stateHierarchyBehaviourScheduler);
             _transitionManager = new TransitionManager<TState, TTrigger>(_stateComparer, _triggerComparer, _stateHierarchyBehaviourScheduler, _transitionValidator);
         }
 
@@ -134,7 +135,16 @@ namespace Paps.StateMachines
 
         public IEnumerable<TState> GetActiveHierarchyPath()
         {
-            return _stateHierarchyBehaviourScheduler.GetActiveHierarchyPath();
+            var activeHierarchyPath = _stateHierarchyBehaviourScheduler.GetActiveHierarchyPath();
+
+            TState[] array = new TState[activeHierarchyPath.Count];
+
+            for (int i = 0; i < array.Length; i++)
+            {
+                array[i] = activeHierarchyPath[i].Key;
+            }
+
+            return array;
         }
 
         public IGuardCondition[] GetGuardConditionsOf(Transition<TState, TTrigger> transition)
@@ -198,12 +208,44 @@ namespace Paps.StateMachines
 
         public void Start()
         {
-            if (IsStarted) throw new StateMachineStartedException();
-            if (StateCount == 0) throw new EmptyStateMachineException();
+            ValidateIsStarted();
+            ValidateIsNotEmpty();
 
             IsStarted = true;
 
             _stateHierarchyBehaviourScheduler.Enter();
+        }
+
+        private void ValidateIsNotEmpty()
+        {
+            if (StateCount == 0) throw new EmptyStateMachineException();
+        }
+
+        private void ValidateIsStarted()
+        {
+            ValidateIsNotIn(InternalState.Stopped);
+        }
+
+        private void ValidateIsNotIn(InternalState internalState)
+        {
+            if(_internalState == internalState) ThrowByInternalState();
+        }
+        
+        private void ThrowByInternalState()
+        {
+            switch (_internalState)
+            {
+                case InternalState.Stopped:
+                    throw new StateMachineNotStartedException();
+                case InternalState.Stopping:
+                    throw new StateMachineStoppingException();
+                case InternalState.Transitioning:
+                    throw new StateMachineTransitioningException();
+                case InternalState.EvaluatingTransitions:
+                    throw new StateMachineEvaluatingTransitionsException();
+                case InternalState.Idle:
+                    throw new StateMachineStartedException();
+            }
         }
 
         public void Stop()
@@ -218,7 +260,10 @@ namespace Paps.StateMachines
 
         public void Trigger(TTrigger trigger)
         {
-            
+            ValidateIsStarted();
+            ValidateIsNotIn(InternalState.Stopping);
+
+            _transitionManager.Trigger(trigger);
         }
 
         public void Update()

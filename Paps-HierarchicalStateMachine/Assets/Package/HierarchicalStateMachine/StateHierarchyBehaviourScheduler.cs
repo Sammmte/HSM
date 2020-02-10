@@ -108,16 +108,9 @@ namespace Paps.StateMachines
             return _stateComparer.Equals(stateId1, stateId2);
         }
 
-        public IEnumerable<TState> GetActiveHierarchyPath()
+        public List<KeyValuePair<TState, IState>> GetActiveHierarchyPath()
         {
-            TState[] array = new TState[_activeHierarchyPath.Count];
-
-            for(int i = 0; i < array.Length; i++)
-            {
-                array[i] = _activeHierarchyPath[i].Key;
-            }
-
-            return array;
+            return _activeHierarchyPath;
         }
 
         public bool IsInState(TState stateId)

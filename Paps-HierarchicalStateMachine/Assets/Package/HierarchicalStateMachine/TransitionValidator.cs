@@ -9,13 +9,16 @@ namespace Paps.StateMachines
 
         private IEqualityComparer<TState> _stateComparer;
         private IEqualityComparer<TTrigger> _triggerComparer;
+        private StateHierarchyBehaviourScheduler<TState> _stateHierarchyBehaviourScheduler;
 
         private TransitionEqualityComparer<TState, TTrigger> _transitionComparer;
 
-        public TransitionValidator(IEqualityComparer<TState> stateComparer, IEqualityComparer<TTrigger> triggerComparer)
+        public TransitionValidator(IEqualityComparer<TState> stateComparer, IEqualityComparer<TTrigger> triggerComparer, 
+            StateHierarchyBehaviourScheduler<TState> stateHierarchyBehaviourScheduler)
         {
             _stateComparer = stateComparer ?? throw new ArgumentNullException(nameof(stateComparer));
             _triggerComparer = triggerComparer ?? throw new ArgumentNullException(nameof(triggerComparer));
+            _stateHierarchyBehaviourScheduler = stateHierarchyBehaviourScheduler;
 
             _transitionComparer = new TransitionEqualityComparer<TState, TTrigger>(_stateComparer, _triggerComparer);
 
@@ -63,6 +66,9 @@ namespace Paps.StateMachines
 
         public bool IsValid(Transition<TState, TTrigger> transition)
         {
+            if (_stateHierarchyBehaviourScheduler.IsValidSwitchTo(transition.StateTo, out TState _) == false)
+                return false;
+            
             var guardConditionsList = _guardConditions[transition];
 
             for(int i = 0; i < guardConditionsList.Count; i++)
