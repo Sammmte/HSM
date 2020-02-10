@@ -23,10 +23,10 @@ namespace Tests.WithStructs
         [Test]
         public void Add_States()
         {
-            var hsm = new HierarchicalStateMachine<int, int>();
+            var hsm = NewStateMachine();
 
-            int stateId1 = 1;
-            int stateId2 = 2;
+            var stateId1 = 1;
+            var stateId2 = 2;
 
             var stateObj1 = Substitute.For<IState>();
             var stateObj2 = Substitute.For<IState>();
@@ -45,9 +45,9 @@ namespace Tests.WithStructs
         [Test]
         public void Throw_An_Exception_If_User_Tries_To_Add_The_Same_State_Id_Twice()
         {
-            var hsm = new HierarchicalStateMachine<int, int>();
+            var hsm = NewStateMachine();
 
-            int stateId = 1;
+            var stateId = 1;
 
             var stateObj1 = Substitute.For<IState>();
             var stateObj2 = Substitute.For<IState>();
@@ -60,9 +60,9 @@ namespace Tests.WithStructs
         [Test]
         public void Throw_An_Exception_If_User_Tries_To_Add_A_Null_State_Object()
         {
-            var hsm = new HierarchicalStateMachine<int, int>();
+            var hsm = NewStateMachine();
 
-            int stateId = 1;
+            var stateId = 1;
 
             Assert.Throws<ArgumentNullException>(() => hsm.AddState(stateId, null));
         }
@@ -70,10 +70,10 @@ namespace Tests.WithStructs
         [Test]
         public void Permit_Add_The_Same_State_Object_Twice()
         {
-            var hsm = new HierarchicalStateMachine<int, int>();
+            var hsm = NewStateMachine();
 
-            int stateId1 = 1;
-            int stateId2 = 2;
+            var stateId1 = 1;
+            var stateId2 = 2;
 
             var stateObj = Substitute.For<IState>();
 
@@ -85,10 +85,10 @@ namespace Tests.WithStructs
         [Test]
         public void Remove_States()
         {
-            var hsm = new HierarchicalStateMachine<int, int>();
+            var hsm = NewStateMachine();
 
-            int stateId1 = 1;
-            int stateId2 = 2;
+            var stateId1 = 1;
+            var stateId2 = 2;
 
             var stateObj = Substitute.For<IState>();
 
@@ -108,9 +108,9 @@ namespace Tests.WithStructs
         [Test]
         public void Do_Nothing_If_User_Tries_To_Remove_State_Ids_That_Were_Not_Added()
         {
-            var hsm = new HierarchicalStateMachine<int, int>();
+            var hsm = NewStateMachine();
 
-            int stateId = 1;
+            var stateId = 1;
 
             Assert.DoesNotThrow(() => hsm.RemoveState(stateId));
         }
@@ -118,12 +118,12 @@ namespace Tests.WithStructs
         [Test]
         public void Set_Childs_To_States()
         {
-            var hsm = new HierarchicalStateMachine<int, int>();
+            var hsm = NewStateMachine();
 
-            int stateId1 = 1;
-            int stateId2 = 2;
-            int stateId3 = 3;
-            int stateId4 = 4;
+            var stateId1 = 1;
+            var stateId2 = 2;
+            var stateId3 = 3;
+            var stateId4 = 4;
 
             var stateObj = Substitute.For<IState>();
 
@@ -146,10 +146,10 @@ namespace Tests.WithStructs
         [Test]
         public void Throw_An_Exception_If_User_Tries_To_Set_A_Substate_Relation_Between_State_Ids_That_Were_Not_Added()
         {
-            var hsm = new HierarchicalStateMachine<int, int>();
+            var hsm = NewStateMachine();
 
-            int stateId1 = 1;
-            int stateId2 = 2;
+            var stateId1 = 1;
+            var stateId2 = 2;
 
             var stateObj = Substitute.For<IState>();
 
@@ -169,10 +169,10 @@ namespace Tests.WithStructs
         [Test]
         public void Do_Nothing_If_User_Tries_To_Establish_A_Substate_Relation_Twice()
         {
-            var hsm = new HierarchicalStateMachine<int, int>();
+            var hsm = NewStateMachine();
 
-            int stateId1 = 1;
-            int stateId2 = 2;
+            var stateId1 = 1;
+            var stateId2 = 2;
 
             var stateObj = Substitute.For<IState>();
 
@@ -187,9 +187,9 @@ namespace Tests.WithStructs
         [Test]
         public void Throw_An_Exception_If_User_Tries_To_Establish_A_Substate_Relation_With_The_Same_Id_In_Both_Parameters()
         {
-            var hsm = new HierarchicalStateMachine<int, int>();
+            var hsm = NewStateMachine();
 
-            int stateId = 1;
+            var stateId = 1;
 
             var stateObj = Substitute.For<IState>();
 
@@ -201,11 +201,11 @@ namespace Tests.WithStructs
         [Test]
         public void Throw_An_Exception_If_User_Tries_To_Establish_A_Substate_Relation_And_Child_State_Already_Has_A_Parent()
         {
-            var hsm = new HierarchicalStateMachine<int, int>();
+            var hsm = NewStateMachine();
 
-            int stateId1 = 1;
-            int stateId2 = 2;
-            int stateId3 = 3;
+            var stateId1 = 1;
+            var stateId2 = 2;
+            var stateId3 = 3;
 
             var stateObj = Substitute.For<IState>();
 
@@ -221,10 +221,10 @@ namespace Tests.WithStructs
         [Test]
         public void Throw_An_Exception_If_User_Tries_To_Establish_A_Substate_Relation_Between_Parent_And_Grandfather()
         {
-            var hsm = new HierarchicalStateMachine<int, int>();
+            var hsm = NewStateMachine();
 
-            int stateId1 = 1;
-            int stateId2 = 2;
+            var stateId1 = 1;
+            var stateId2 = 2;
 
             var stateObj = Substitute.For<IState>();
 
@@ -239,10 +239,10 @@ namespace Tests.WithStructs
         [Test]
         public void Break_Substate_Relations()
         {
-            var hsm = new HierarchicalStateMachine<int, int>();
+            var hsm = NewStateMachine();
 
-            int stateId1 = 1;
-            int stateId2 = 2;
+            var stateId1 = 1;
+            var stateId2 = 2;
 
             var stateObj = Substitute.For<IState>();
 
@@ -259,11 +259,11 @@ namespace Tests.WithStructs
         [Test]
         public void Return_False_On_AreImmediateParentAndChild_If_States_Are_Grandfather_And_Grandson()
         {
-            var hsm = new HierarchicalStateMachine<int, int>();
+            var hsm = NewStateMachine();
 
-            int stateId1 = 1;
-            int stateId2 = 2;
-            int stateId3 = 3;
+            var stateId1 = 1;
+            var stateId2 = 2;
+            var stateId3 = 3;
 
             var stateObj = Substitute.For<IState>();
 
@@ -280,10 +280,10 @@ namespace Tests.WithStructs
         [Test]
         public void Return_True_On_AreImmediateParentAndChild_If_States_Are_Parent_And_Child()
         {
-            var hsm = new HierarchicalStateMachine<int, int>();
+            var hsm = NewStateMachine();
 
-            int stateId1 = 1;
-            int stateId2 = 2;
+            var stateId1 = 1;
+            var stateId2 = 2;
 
             var stateObj = Substitute.For<IState>();
 
@@ -298,11 +298,11 @@ namespace Tests.WithStructs
         [Test]
         public void Return_Orphan_States_As_Roots()
         {
-            var hsm = new HierarchicalStateMachine<int, int>();
+            var hsm = NewStateMachine();
 
-            int stateId1 = 1;
-            int stateId2 = 2;
-            int stateId3 = 3;
+            var stateId1 = 1;
+            var stateId2 = 2;
+            var stateId3 = 3;
 
             var stateObj = Substitute.For<IState>();
 
@@ -322,7 +322,7 @@ namespace Tests.WithStructs
         [Test]
         public void Return_Null_If_There_Is_No_Orphan_States_When_Asked_For_Roots()
         {
-            var hsm = new HierarchicalStateMachine<int, int>();
+            var hsm = NewStateMachine();
 
             Assert.IsNull(hsm.GetRoots());
         }
@@ -330,10 +330,10 @@ namespace Tests.WithStructs
         [Test]
         public void Return_Parent_Of_State()
         {
-            var hsm = new HierarchicalStateMachine<int, int>();
+            var hsm = NewStateMachine();
 
-            int stateId1 = 1;
-            int stateId2 = 2;
+            var stateId1 = 1;
+            var stateId2 = 2;
 
             var stateObj = Substitute.For<IState>();
 
@@ -350,9 +350,9 @@ namespace Tests.WithStructs
         [Test]
         public void Return_Child_Id_If_Child_Has_No_Parent_When_Asked_For_Parent_Of_State()
         {
-            var hsm = new HierarchicalStateMachine<int, int>();
+            var hsm = NewStateMachine();
 
-            int stateId1 = 1;
+            var stateId1 = 1;
 
             var stateObj = Substitute.For<IState>();
 
@@ -366,9 +366,9 @@ namespace Tests.WithStructs
         [Test]
         public void Throw_An_Exception_If_User_Tries_To_Ask_For_The_Parent_Of_A_State_That_Was_Not_Added()
         {
-            var hsm = new HierarchicalStateMachine<int, int>();
+            var hsm = NewStateMachine();
 
-            int stateId1 = 1;
+            var stateId1 = 1;
 
             Assert.Throws<StateIdNotAddedException>(() => hsm.GetParentOf(stateId1));
         }
@@ -376,9 +376,9 @@ namespace Tests.WithStructs
         [Test]
         public void Return_State_Object_By_Id()
         {
-            var hsm = new HierarchicalStateMachine<int, int>();
+            var hsm = NewStateMachine();
 
-            int stateId1 = 1;
+            var stateId1 = 1;
 
             var stateObj = Substitute.For<IState>();
 
@@ -392,9 +392,9 @@ namespace Tests.WithStructs
         [Test]
         public void Throw_An_Exception_If_User_Tries_To_Ask_For_The_State_Object_Of_A_State_That_Was_Not_Added()
         {
-            var hsm = new HierarchicalStateMachine<int, int>();
+            var hsm = NewStateMachine();
 
-            int stateId1 = 1;
+            var stateId1 = 1;
 
             Assert.Throws<StateIdNotAddedException>(() => hsm.GetStateById(stateId1));
         }
@@ -402,12 +402,12 @@ namespace Tests.WithStructs
         [Test]
         public void Return_Only_Immediate_Childs_Of_State()
         {
-            var hsm = new HierarchicalStateMachine<int, int>();
+            var hsm = NewStateMachine();
 
-            int stateId1 = 1;
-            int stateId2 = 2;
-            int stateId3 = 3;
-            int stateId4 = 4;
+            var stateId1 = 1;
+            var stateId2 = 2;
+            var stateId3 = 3;
+            var stateId4 = 4;
 
             var stateObj = Substitute.For<IState>();
 
@@ -431,9 +431,9 @@ namespace Tests.WithStructs
         [Test]
         public void Return_Null_If_State_Does_Not_Has_Childs_When_Asked_For_Immediate_Childs()
         {
-            var hsm = new HierarchicalStateMachine<int, int>();
+            var hsm = NewStateMachine();
 
-            int stateId1 = 1;
+            var stateId1 = 1;
 
             var stateObj = Substitute.For<IState>();
 
@@ -447,9 +447,9 @@ namespace Tests.WithStructs
         [Test]
         public void Throw_An_Exception_If_User_Tries_To_Ask_For_Childs_Of_A_State_That_Was_Not_Added()
         {
-            var hsm = new HierarchicalStateMachine<int, int>();
+            var hsm = NewStateMachine();
 
-            int stateId1 = 1;
+            var stateId1 = 1;
 
             Assert.Throws<StateIdNotAddedException>(() => hsm.GetImmediateChildsOf(stateId1));
         }
@@ -457,10 +457,10 @@ namespace Tests.WithStructs
         [Test]
         public void Return_States()
         {
-            var hsm = new HierarchicalStateMachine<int, int>();
+            var hsm = NewStateMachine();
 
-            int stateId1 = 1;
-            int stateId2 = 2;
+            var stateId1 = 1;
+            var stateId2 = 2;
 
             var stateObj = Substitute.For<IState>();
 
@@ -476,11 +476,11 @@ namespace Tests.WithStructs
         [Test]
         public void Set_Initial_Child_State_To_A_State()
         {
-            var hsm = new HierarchicalStateMachine<int, int>();
+            var hsm = NewStateMachine();
 
-            int stateId1 = 1;
-            int stateId2 = 2;
-            int stateId3 = 3;
+            var stateId1 = 1;
+            var stateId2 = 2;
+            var stateId3 = 3;
 
             var stateObj = Substitute.For<IState>();
 
@@ -499,7 +499,7 @@ namespace Tests.WithStructs
         [Test]
         public void Return_Default_Type_Value_If_Initial_State_Is_Not_Set()
         {
-            var hsm = new HierarchicalStateMachine<int, int>();
+            var hsm = NewStateMachine();
 
             Assert.That(hsm.InitialState == default, "Default initial state is default type value");
         }
@@ -507,9 +507,9 @@ namespace Tests.WithStructs
         [Test]
         public void Return_Default_Type_Value_If_Initial_State_Is_Not_Set_On_A_State()
         {
-            var hsm = new HierarchicalStateMachine<int, int>();
+            var hsm = NewStateMachine();
 
-            int stateId1 = 1;
+            var stateId1 = 1;
 
             var stateObj = Substitute.For<IState>();
 
@@ -521,10 +521,10 @@ namespace Tests.WithStructs
         [Test]
         public void Throw_An_Exception_If_User_Tries_To_Set_Initial_State_Of_A_State_With_An_Id_That_Was_Not_Added()
         {
-            var hsm = new HierarchicalStateMachine<int, int>();
+            var hsm = NewStateMachine();
 
-            int stateId1 = 1;
-            int stateId2 = 2;
+            var stateId1 = 1;
+            var stateId2 = 2;
 
             Assert.Throws<StateIdNotAddedException>(() => hsm.SetInitialStateTo(stateId1, stateId2));
         }
@@ -532,10 +532,10 @@ namespace Tests.WithStructs
         [Test]
         public void Convert_Into_Root_A_Child_State_After_Break_Substate_Relation()
         {
-            var hsm = new HierarchicalStateMachine<int, int>();
+            var hsm = NewStateMachine();
 
-            int stateId1 = 1;
-            int stateId2 = 2;
+            var stateId1 = 1;
+            var stateId2 = 2;
 
             var stateObj = Substitute.For<IState>();
 
@@ -555,10 +555,10 @@ namespace Tests.WithStructs
         [Test]
         public void Return_Child_State_Has_No_Parent_After_Its_Substate_Relation_With_Its_Previous_Parent_Was_Broken()
         {
-            var hsm = new HierarchicalStateMachine<int, int>();
+            var hsm = NewStateMachine();
 
-            int stateId1 = 1;
-            int stateId2 = 2;
+            var stateId1 = 1;
+            var stateId2 = 2;
 
             var stateObj = Substitute.For<IState>();
 
@@ -575,10 +575,10 @@ namespace Tests.WithStructs
         [Test]
         public void Return_Parent_Has_No_Child_If_Their_Substate_Relation_Were_Broken()
         {
-            var hsm = new HierarchicalStateMachine<int, int>();
+            var hsm = NewStateMachine();
 
-            int stateId1 = 1;
-            int stateId2 = 2;
+            var stateId1 = 1;
+            var stateId2 = 2;
 
             var stateObj = Substitute.For<IState>();
 
@@ -597,11 +597,11 @@ namespace Tests.WithStructs
         [Test]
         public void Remove_All_Child_From_A_State_When_It_Is_Removed()
         {
-            var hsm = new HierarchicalStateMachine<int, int>();
+            var hsm = NewStateMachine();
 
-            int stateId1 = 1;
-            int stateId2 = 2;
-            int stateId3 = 3;
+            var stateId1 = 1;
+            var stateId2 = 2;
+            var stateId3 = 3;
 
             var stateObj = Substitute.For<IState>();
 
@@ -624,11 +624,11 @@ namespace Tests.WithStructs
         [Test]
         public void Start_And_Enter_Initial_States()
         {
-            var hsm = new HierarchicalStateMachine<int, int>();
+            var hsm = NewStateMachine();
 
-            int stateId1 = 1;
-            int stateId2 = 2;
-            int stateId3 = 3;
+            var stateId1 = 1;
+            var stateId2 = 2;
+            var stateId3 = 3;
 
             var stateObj = Substitute.For<IState>();
 
@@ -653,11 +653,11 @@ namespace Tests.WithStructs
         [Test]
         public void Enter_States_From_Root_To_Leaf()
         {
-            var hsm = new HierarchicalStateMachine<int, int>();
+            var hsm = NewStateMachine();
 
-            int stateId1 = 1;
-            int stateId2 = 2;
-            int stateId3 = 3;
+            var stateId1 = 1;
+            var stateId2 = 2;
+            var stateId3 = 3;
 
             var stateObj1 = Substitute.For<IState>();
             var stateObj2 = Substitute.For<IState>();
@@ -687,11 +687,11 @@ namespace Tests.WithStructs
         [Test]
         public void Return_Active_Hierarchy_Path()
         {
-            var hsm = new HierarchicalStateMachine<int, int>();
+            var hsm = NewStateMachine();
 
-            int stateId1 = 1;
-            int stateId2 = 2;
-            int stateId3 = 3;
+            var stateId1 = 1;
+            var stateId2 = 2;
+            var stateId3 = 3;
 
             var stateObj = Substitute.For<IState>();
 
@@ -719,11 +719,11 @@ namespace Tests.WithStructs
         [Test]
         public void Stop_And_Exit_States_In_The_Active_Hierarchy_Path()
         {
-            var hsm = new HierarchicalStateMachine<int, int>();
+            var hsm = NewStateMachine();
 
-            int stateId1 = 1;
-            int stateId2 = 2;
-            int stateId3 = 3;
+            var stateId1 = 1;
+            var stateId2 = 2;
+            var stateId3 = 3;
 
             var stateObj = Substitute.For<IState>();
 
@@ -753,11 +753,11 @@ namespace Tests.WithStructs
         [Test]
         public void Exit_States_From_Leaf_To_Root()
         {
-            var hsm = new HierarchicalStateMachine<int, int>();
+            var hsm = NewStateMachine();
 
-            int stateId1 = 1;
-            int stateId2 = 2;
-            int stateId3 = 3;
+            var stateId1 = 1;
+            var stateId2 = 2;
+            var stateId3 = 3;
 
             var stateObj1 = Substitute.For<IState>();
             var stateObj2 = Substitute.For<IState>();
@@ -789,11 +789,11 @@ namespace Tests.WithStructs
         [Test]
         public void Update_States_In_The_Active_Hierarchy_Path()
         {
-            var hsm = new HierarchicalStateMachine<int, int>();
+            var hsm = NewStateMachine();
 
-            int stateId1 = 1;
-            int stateId2 = 2;
-            int stateId3 = 3;
+            var stateId1 = 1;
+            var stateId2 = 2;
+            var stateId3 = 3;
 
             var stateObj = Substitute.For<IState>();
 
@@ -819,11 +819,11 @@ namespace Tests.WithStructs
         [Test]
         public void Update_States_From_Root_To_Leaf()
         {
-            var hsm = new HierarchicalStateMachine<int, int>();
+            var hsm = NewStateMachine();
 
-            int stateId1 = 1;
-            int stateId2 = 2;
-            int stateId3 = 3;
+            var stateId1 = 1;
+            var stateId2 = 2;
+            var stateId3 = 3;
 
             var stateObj1 = Substitute.For<IState>();
             var stateObj2 = Substitute.For<IState>();
@@ -855,9 +855,9 @@ namespace Tests.WithStructs
         [Test]
         public void Set_Initial_State_Automatically_When_The_First_State_Is_Added()
         {
-            var hsm = new HierarchicalStateMachine<int, int>();
+            var hsm = NewStateMachine();
 
-            int stateId = 1;
+            var stateId = 1;
 
             var stateObj = Substitute.For<IState>();
 
@@ -869,9 +869,9 @@ namespace Tests.WithStructs
         [Test]
         public void Reset_To_Default_Type_Value_After_The_Last_State_Is_Removed()
         {
-            var hsm = new HierarchicalStateMachine<int, int>();
+            var hsm = NewStateMachine();
 
-            int stateId = 1;
+            var stateId = 1;
 
             var stateObj = Substitute.For<IState>();
 
@@ -885,10 +885,10 @@ namespace Tests.WithStructs
         [Test]
         public void Set_Initial_State_Automatically_When_The_First_Child_State_Is_Added_To_A_State()
         {
-            var hsm = new HierarchicalStateMachine<int, int>();
+            var hsm = NewStateMachine();
 
-            int stateId1 = 1;
-            int stateId2 = 2;
+            var stateId1 = 1;
+            var stateId2 = 2;
 
             var stateObj = Substitute.For<IState>();
 
@@ -903,10 +903,10 @@ namespace Tests.WithStructs
         [Test]
         public void Reset_To_Default_Type_Value_After_The_Last_Child_State_Is_Remove_From_A_State()
         {
-            var hsm = new HierarchicalStateMachine<int, int>();
+            var hsm = NewStateMachine();
 
-            int stateId1 = 1;
-            int stateId2 = 2;
+            var stateId1 = 1;
+            var stateId2 = 2;
 
             var stateObj = Substitute.For<IState>();
 
@@ -923,11 +923,11 @@ namespace Tests.WithStructs
         [Test]
         public void Return_If_Is_In_A_Specific_State()
         {
-            var hsm = new HierarchicalStateMachine<int, int>();
+            var hsm = NewStateMachine();
 
-            int stateId1 = 1;
-            int stateId2 = 2;
-            int stateId3 = 3;
+            var stateId1 = 1;
+            var stateId2 = 2;
+            var stateId3 = 3;
 
             var stateObj1 = Substitute.For<IState>();
             var stateObj2 = Substitute.For<IState>();
@@ -953,7 +953,7 @@ namespace Tests.WithStructs
         [Test]
         public void Throw_An_Exception_If_User_Tries_To_Start_The_State_Machine_When_It_Is_Already_Started()
         {
-            var hsm = new HierarchicalStateMachine<int, int>();
+            var hsm = NewStateMachine();
 
             var stateId1 = 1;
 
@@ -969,7 +969,7 @@ namespace Tests.WithStructs
         [Test]
         public void Throw_An_Exception_If_User_Tries_To_Start_The_State_Machine_With_No_State_Added()
         {
-            var hsm = new HierarchicalStateMachine<int, int>();
+            var hsm = NewStateMachine();
 
             Assert.Throws<EmptyStateMachineException>(() => hsm.Start());
         }
@@ -977,7 +977,7 @@ namespace Tests.WithStructs
         [Test]
         public void Do_Nothing_If_User_Tries_To_Stop_The_State_Machine_Without_Been_Started()
         {
-            var hsm = new HierarchicalStateMachine<int, int>();
+            var hsm = NewStateMachine();
 
             Assert.DoesNotThrow(() => hsm.Stop());
         }
@@ -985,16 +985,16 @@ namespace Tests.WithStructs
         [Test]
         public void Add_Transitions()
         {
-            var hsm = new HierarchicalStateMachine<int, int>();
+            var hsm = NewStateMachine();
 
-            int stateId1 = 1;
-            int stateId2 = 2;
+            var stateId1 = 1;
+            var stateId2 = 2;
 
             var stateObj = Substitute.For<IState>();
 
             int trigger = 0;
 
-            var transition = new Transition<int, int>(stateId1, trigger, stateId2);
+            var transition = NewTransition(stateId1, trigger, stateId2);
 
             hsm.AddState(stateId1, stateObj);
             hsm.AddState(stateId2, stateObj);
@@ -1007,16 +1007,16 @@ namespace Tests.WithStructs
         [Test]
         public void Do_Nothing_If_User_Tries_To_Add_The_Same_Transition_Twice()
         {
-            var hsm = new HierarchicalStateMachine<int, int>();
+            var hsm = NewStateMachine();
 
-            int stateId1 = 1;
-            int stateId2 = 2;
+            var stateId1 = 1;
+            var stateId2 = 2;
 
             var stateObj = Substitute.For<IState>();
 
             int trigger = 0;
 
-            var transition = new Transition<int, int>(stateId1, trigger, stateId2);
+            var transition = NewTransition(stateId1, trigger, stateId2);
 
             hsm.AddState(stateId1, stateObj);
             hsm.AddState(stateId2, stateObj);
@@ -1030,16 +1030,16 @@ namespace Tests.WithStructs
         [Test]
         public void Throw_An_Exception_If_User_Tries_To_Add_Transition_With_State_Ids_That_Were_Not_Added()
         {
-            var hsm = new HierarchicalStateMachine<int, int>();
+            var hsm = NewStateMachine();
 
-            int stateId1 = 1;
-            int stateId2 = 2;
+            var stateId1 = 1;
+            var stateId2 = 2;
 
             var stateObj = Substitute.For<IState>();
 
             int trigger = 0;
 
-            var transition = new Transition<int, int>(stateId1, trigger, stateId2);
+            var transition = NewTransition(stateId1, trigger, stateId2);
 
             Assert.Throws<StateIdNotAddedException>(() => hsm.AddTransition(transition));
 
@@ -1057,16 +1057,16 @@ namespace Tests.WithStructs
         [Test]
         public void Remove_Transitions()
         {
-            var hsm = new HierarchicalStateMachine<int, int>();
+            var hsm = NewStateMachine();
 
-            int stateId1 = 1;
-            int stateId2 = 2;
+            var stateId1 = 1;
+            var stateId2 = 2;
 
             var stateObj = Substitute.For<IState>();
 
             int trigger = 0;
 
-            var transition = new Transition<int, int>(stateId1, trigger, stateId2);
+            var transition = NewTransition(stateId1, trigger, stateId2);
 
             hsm.AddState(stateId1, stateObj);
             hsm.AddState(stateId2, stateObj);
@@ -1081,17 +1081,17 @@ namespace Tests.WithStructs
         [Test]
         public void Return_Transitions()
         {
-            var hsm = new HierarchicalStateMachine<int, int>();
+            var hsm = NewStateMachine();
 
-            int stateId1 = 1;
-            int stateId2 = 2;
+            var stateId1 = 1;
+            var stateId2 = 2;
 
             var stateObj = Substitute.For<IState>();
 
             int trigger = 0;
 
-            var transition1 = new Transition<int, int>(stateId1, trigger, stateId2);
-            var transition2 = new Transition<int, int>(stateId2, trigger, stateId1);
+            var transition1 = NewTransition(stateId1, trigger, stateId2);
+            var transition2 = NewTransition(stateId2, trigger, stateId1);
 
             hsm.AddState(stateId1, stateObj);
             hsm.AddState(stateId2, stateObj);
@@ -1103,6 +1103,97 @@ namespace Tests.WithStructs
 
             Assert.Contains(transition1, transitions);
             Assert.Contains(transition2, transitions);
+        }
+
+        [Test]
+        public void Add_Guard_Conditions_To_Transitions()
+        {
+            var hsm = NewStateMachine();
+
+            var stateId1 = 1;
+            var stateId2 = 2;
+
+            var stateObj = Substitute.For<IState>();
+
+            int trigger = 0;
+
+            var transition = NewTransition(stateId1, trigger, stateId2);
+
+            var guardCondition = Substitute.For<IGuardCondition>();
+
+            hsm.AddState(stateId1, stateObj);
+            hsm.AddState(stateId2, stateObj);
+
+            hsm.AddTransition(transition);
+
+            hsm.AddGuardConditionTo(transition, guardCondition);
+
+            Assert.That(hsm.ContainsGuardConditionOn(transition, guardCondition), "Transition contains guard condition");
+        }
+
+        [Test]
+        public void Remove_Guard_Conditions_From_Transitions()
+        {
+            var hsm = NewStateMachine();
+
+            var stateId1 = 1;
+            var stateId2 = 2;
+
+            var stateObj = Substitute.For<IState>();
+
+            int trigger = 0;
+
+            var transition = NewTransition(stateId1, trigger, stateId2);
+
+            var guardCondition = Substitute.For<IGuardCondition>();
+
+            hsm.AddState(stateId1, stateObj);
+            hsm.AddState(stateId2, stateObj);
+
+            hsm.AddTransition(transition);
+
+            hsm.AddGuardConditionTo(transition, guardCondition);
+
+            hsm.RemoveGuardConditionFrom(transition, guardCondition);
+
+            Assert.That(hsm.ContainsGuardConditionOn(transition, guardCondition) == false, "Transition does not contains guard condition");
+        }
+
+        [Test]
+        public void Return_Transitions_Of_A_Specific_Transition()
+        {
+            var hsm = NewStateMachine();
+
+            var stateId1 = 1;
+            var stateId2 = 2;
+
+            var stateObj = Substitute.For<IState>();
+
+            int trigger = 0;
+
+            var transition1 = NewTransition(stateId1, trigger, stateId2);
+            var transition2 = NewTransition(stateId2, trigger, stateId1);
+
+            var guardCondition1 = Substitute.For<IGuardCondition>();
+            var guardCondition2 = Substitute.For<IGuardCondition>();
+            var guardCondition3 = Substitute.For<IGuardCondition>();
+
+            hsm.AddState(stateId1, stateObj);
+            hsm.AddState(stateId2, stateObj);
+
+            hsm.AddTransition(transition1);
+            hsm.AddTransition(transition2);
+
+            hsm.AddGuardConditionTo(transition1, guardCondition1);
+            hsm.AddGuardConditionTo(transition1, guardCondition2);
+
+            hsm.AddGuardConditionTo(transition2, guardCondition3);
+
+            var guardConditions = hsm.GetGuardConditionsOf(transition1);
+
+            Assert.Contains(guardCondition1, guardConditions);
+            Assert.Contains(guardCondition2, guardConditions);
+            AssertExtensions.DoesNotContains(guardCondition3, guardConditions);
         }
     }
 }

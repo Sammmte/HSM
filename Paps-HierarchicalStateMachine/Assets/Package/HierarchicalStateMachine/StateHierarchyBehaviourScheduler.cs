@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System;
 
 namespace Paps.StateMachines
 {
@@ -10,6 +11,9 @@ namespace Paps.StateMachines
 
         private IEqualityComparer<TState> _stateComparer;
 
+        public event ActiveHierarchyPathChanged OnBeforeActiveHierarchyPathChanges;
+        public event ActiveHierarchyPathChanged OnActiveHierarchyPathChanged;
+
         public StateHierarchyBehaviourScheduler(StateHierarchy<TState> stateHierarchy, IEqualityComparer<TState> stateComparer)
         {
             _stateHierarchy = stateHierarchy;
@@ -20,12 +24,12 @@ namespace Paps.StateMachines
 
         public void Enter()
         {
-            AddFrom(_stateHierarchy.InitialState);
+            AddToActivesFrom(_stateHierarchy.InitialState);
 
-            ExecuteEnterEventsFrom(_stateHierarchy.InitialState);
+            EnterActivesFrom(_stateHierarchy.InitialState);
         }
 
-        private void AddFrom(TState stateId)
+        private void AddToActivesFrom(TState stateId)
         {
             var previous = stateId;
             var current = _stateHierarchy.GetInitialStateOf(previous);
@@ -41,7 +45,7 @@ namespace Paps.StateMachines
             }
         }
 
-        private void ExecuteEnterEventsFrom(TState stateId)
+        private void EnterActivesFrom(TState stateId)
         {
             for(int i = 0; i < _activeHierarchyPath.Count; i++)
             {
@@ -59,12 +63,24 @@ namespace Paps.StateMachines
 
         public void Exit()
         {
-            ExitUntil(_activeHierarchyPath[0].Key);
+            ExitActivesUntil(_activeHierarchyPath[0].Key);
 
             _activeHierarchyPath.Clear();
         }
 
-        private void ExitUntil(TState stateId)
+        private void RemoveFromActivesUntil(TState stateId)
+        {
+            for(int i = _activeHierarchyPath.Count - 1; i >= 0; i--)
+            {
+                var current = _activeHierarchyPath[i];
+
+                _activeHierarchyPath.RemoveAt(i);
+
+                if (AreEquals(current.Key, stateId)) return;
+            }
+        }
+
+        private void ExitActivesUntil(TState stateId)
         {
             for(int i = _activeHierarchyPath.Count - 1; i >= 0; i--)
             {
@@ -113,6 +129,38 @@ namespace Paps.StateMachines
             }
 
             return false;
+        }
+
+        public bool IsValidSwitchTo(TState stateId, out TState activeSibling)
+        {
+            for(int i = 0; i < _activeHierarchyPath.Count; i++)
+            {
+                if (_stateHierarchy.AreSiblings(_activeHierarchyPath[i].Key, stateId))
+                {
+                    activeSibling = _activeHierarchyPath[i].Key;
+                    return true;
+                } 
+            }
+
+            activeSibling = default;
+            return false;
+        }
+
+        public void SwitchTo(TState newActiveState)
+        {
+            if (IsValidSwitchTo(newActiveState, out TState activeSibling) == false) throw new InvalidOperationException("Cannot switch to " + newActiveState);
+
+            OnBeforeActiveHierarchyPathChanges?.Invoke();
+
+            ExitActivesUntil(activeSibling);
+
+            RemoveFromActivesUntil(activeSibling);
+
+            AddToActivesFrom(newActiveState);
+
+            OnActiveHierarchyPathChanged?.Invoke();
+
+            EnterActivesFrom(newActiveState);
         }
     }
 }

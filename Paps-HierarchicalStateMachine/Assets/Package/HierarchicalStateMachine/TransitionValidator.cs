@@ -47,7 +47,10 @@ namespace Paps.StateMachines
 
         public bool ContainsGuardConditionOn(Transition<TState, TTrigger> transition, IGuardCondition guardCondition)
         {
-            return _guardConditions[transition].Contains(guardCondition);
+            if (_guardConditions.ContainsKey(transition))
+                return _guardConditions[transition].Contains(guardCondition);
+            else
+                return false;
         }
 
         public IGuardCondition[] GetGuardConditionsOf(Transition<TState, TTrigger> transition)
