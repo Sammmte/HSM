@@ -282,6 +282,8 @@ namespace Paps.StateMachines
         {
             if(IsStarted)
             {
+                SetInternalState(InternalState.Stopping);
+                
                 _stateHierarchyBehaviourScheduler.Exit();
 
                 SetInternalState(InternalState.Stopped);
