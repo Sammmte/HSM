@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Paps.StateMachines
 {
@@ -68,13 +69,16 @@ namespace Paps.StateMachines
         {
             if (_stateHierarchyBehaviourScheduler.IsValidSwitchTo(transition.StateTo, out TState _) == false)
                 return false;
-            
-            var guardConditionsList = _guardConditions[transition];
 
-            for(int i = 0; i < guardConditionsList.Count; i++)
+            if (_guardConditions.ContainsKey(transition))
             {
-                if (guardConditionsList[i].IsValid() == false)
-                    return false;
+                var guardConditionsList = _guardConditions[transition];
+
+                for(int i = 0; i < guardConditionsList.Count; i++)
+                {
+                    if (guardConditionsList[i].IsValid() == false)
+                        return false;
+                }
             }
 
             return true;

@@ -20,10 +20,17 @@ namespace Tests
 
             throw new AssertionException("Expected collection not to has " + expected);
         }
+        
+        public static void DoesNotContains<T>(T expected, IEnumerable<T> enumerable)
+        {
+            if(enumerable.Contains(expected))
+                throw new AssertionException("Expected collection not to has " + expected);
+        }
 
         public static void Contains<T>(T expected, IEnumerable<T> enumerable)
         {
-            if (enumerable.Contains(expected) == false) throw new AssertionException("Enumerable does not contains expected value " + expected);
+            if (enumerable.Contains(expected) == false)
+                throw new AssertionException("Enumerable does not contains expected value " + expected);
         }
     }
 }

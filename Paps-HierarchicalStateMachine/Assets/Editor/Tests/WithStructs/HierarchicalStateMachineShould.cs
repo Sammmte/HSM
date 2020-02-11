@@ -992,7 +992,7 @@ namespace Tests.WithStructs
 
             var stateObj = Substitute.For<IState>();
 
-            int trigger = 0;
+            var trigger = 0;
 
             var transition = NewTransition(stateId1, trigger, stateId2);
 
@@ -1014,7 +1014,7 @@ namespace Tests.WithStructs
 
             var stateObj = Substitute.For<IState>();
 
-            int trigger = 0;
+            var trigger = 0;
 
             var transition = NewTransition(stateId1, trigger, stateId2);
 
@@ -1037,7 +1037,7 @@ namespace Tests.WithStructs
 
             var stateObj = Substitute.For<IState>();
 
-            int trigger = 0;
+            var trigger = 0;
 
             var transition = NewTransition(stateId1, trigger, stateId2);
 
@@ -1064,7 +1064,7 @@ namespace Tests.WithStructs
 
             var stateObj = Substitute.For<IState>();
 
-            int trigger = 0;
+            var trigger = 0;
 
             var transition = NewTransition(stateId1, trigger, stateId2);
 
@@ -1088,7 +1088,7 @@ namespace Tests.WithStructs
 
             var stateObj = Substitute.For<IState>();
 
-            int trigger = 0;
+            var trigger = 0;
 
             var transition1 = NewTransition(stateId1, trigger, stateId2);
             var transition2 = NewTransition(stateId2, trigger, stateId1);
@@ -1115,7 +1115,7 @@ namespace Tests.WithStructs
 
             var stateObj = Substitute.For<IState>();
 
-            int trigger = 0;
+            var trigger = 0;
 
             var transition = NewTransition(stateId1, trigger, stateId2);
 
@@ -1141,7 +1141,7 @@ namespace Tests.WithStructs
 
             var stateObj = Substitute.For<IState>();
 
-            int trigger = 0;
+            var trigger = 0;
 
             var transition = NewTransition(stateId1, trigger, stateId2);
 
@@ -1169,7 +1169,7 @@ namespace Tests.WithStructs
 
             var stateObj = Substitute.For<IState>();
 
-            int trigger = 0;
+            var trigger = 0;
 
             var transition1 = NewTransition(stateId1, trigger, stateId2);
             var transition2 = NewTransition(stateId2, trigger, stateId1);
@@ -1194,6 +1194,216 @@ namespace Tests.WithStructs
             Assert.Contains(guardCondition1, guardConditions);
             Assert.Contains(guardCondition2, guardConditions);
             AssertExtensions.DoesNotContains(guardCondition3, guardConditions);
+        }
+
+        [Test]
+        public void Transition_With_Plain_States()
+        {
+            var hsm = NewStateMachine();
+
+            var stateId1 = 1;
+            var stateId2 = 2;
+
+            var stateObj1 = Substitute.For<IState>();
+            var stateObj2 = Substitute.For<IState>();
+
+            var trigger = 0;
+
+            var transition = NewTransition(stateId1, trigger, stateId2);
+            
+            hsm.AddState(stateId1, stateObj1);
+            hsm.AddState(stateId2, stateObj2);
+            
+            hsm.AddTransition(transition);
+
+            hsm.Start();
+            
+            hsm.Trigger(trigger);
+            
+            Received.InOrder(() =>
+            {
+                stateObj1.Received(1).Exit();
+                stateObj2.Received(1).Enter();
+            });
+            
+            Assert.That(hsm.IsInState(stateId2), "Is in state " + stateId2);
+
+            var activeHierarchyPath = hsm.GetActiveHierarchyPath();
+            
+            AssertExtensions.Contains(stateId2, activeHierarchyPath);
+            AssertExtensions.DoesNotContains(stateId1, activeHierarchyPath);
+        }
+
+        [Test]
+        public void Transition_With_Hierarchical_States()
+        {
+            var hsm = NewStateMachine();
+
+            var stateId1 = 1;
+            var stateId2 = 2;
+            var stateId3 = 3;
+            var stateId4 = 4;
+            var stateId5 = 5;
+            var stateId6 = 6;
+
+            var stateObj1 = Substitute.For<IState>();
+            var stateObj2 = Substitute.For<IState>();
+            var stateObj3 = Substitute.For<IState>();
+            var stateObj4 = Substitute.For<IState>();
+            var stateObj5 = Substitute.For<IState>();
+            var stateObj6 = Substitute.For<IState>();
+
+            var trigger = 0;
+
+            var transition = NewTransition(stateId3, trigger, stateId5);
+            
+            hsm.AddState(stateId1, stateObj1);
+            hsm.AddState(stateId2, stateObj2);
+            hsm.AddState(stateId3, stateObj3);
+            hsm.AddState(stateId4, stateObj4);
+            hsm.AddState(stateId5, stateObj5);
+            hsm.AddState(stateId6, stateObj6);
+            
+            hsm.SetChildTo(stateId1, stateId2);
+            
+            hsm.SetChildTo(stateId2, stateId3);
+            hsm.SetChildTo(stateId2, stateId5);
+            
+            hsm.SetChildTo(stateId3, stateId4);
+            
+            hsm.SetChildTo(stateId5, stateId6);
+            
+            hsm.AddTransition(transition);
+            
+            hsm.Start();
+            
+            hsm.Trigger(trigger);
+            
+            stateObj1.DidNotReceive().Exit();
+            stateObj2.DidNotReceive().Exit();
+
+            Received.InOrder(() =>
+            {
+                stateObj4.Exit();
+                stateObj3.Exit();
+                
+                stateObj5.Enter();
+                stateObj6.Enter();
+            });
+            
+            Assert.That(hsm.IsInState(stateId1), "Is in state " + stateId1);
+            Assert.That(hsm.IsInState(stateId2), "Is in state " + stateId2);
+            Assert.That(hsm.IsInState(stateId5), "Is in state " + stateId5);
+            Assert.That(hsm.IsInState(stateId6), "Is in state " + stateId6);
+
+            var activeHierarchyPath = hsm.GetActiveHierarchyPath();
+            
+            AssertExtensions.Contains(stateId1, activeHierarchyPath);
+            AssertExtensions.Contains(stateId2, activeHierarchyPath);
+            AssertExtensions.Contains(stateId5, activeHierarchyPath);
+            AssertExtensions.Contains(stateId6, activeHierarchyPath);
+        }
+
+        [Test]
+        public void Transition_Queued()
+        {
+            var hsm = NewStateMachine();
+
+            var stateId1 = 1;
+            var stateId2 = 2;
+            var stateId3 = 3;
+            var stateId4 = 4;
+            
+            var stateObj1 = Substitute.For<IState>();
+            var stateObj2 = Substitute.For<IState>();
+            var stateObj3 = Substitute.For<IState>();
+            var stateObj4 = Substitute.For<IState>();
+            
+            var trigger = 0;
+
+            var transition1 = NewTransition(stateId2, trigger, stateId3);
+            var transition2 = NewTransition(stateId3, trigger, stateId2);
+            
+            hsm.AddState(stateId1, stateObj1);
+            hsm.AddState(stateId2, stateObj2);
+            hsm.AddState(stateId3, stateObj3);
+            hsm.AddState(stateId4, stateObj4);
+            
+            hsm.SetChildTo(stateId1, stateId2);
+            hsm.SetChildTo(stateId1, stateId3);
+            
+            hsm.SetChildTo(stateId2, stateId4);
+            
+            hsm.AddTransition(transition1);
+            hsm.AddTransition(transition2);
+            
+            hsm.Start();
+
+            bool shouldTrigger = true;
+            
+            stateObj2.When(state => state.Exit()).Do(callback =>
+            {
+                if (shouldTrigger)
+                {
+                    hsm.Trigger(trigger);
+                    shouldTrigger = false;
+                }
+            });
+            
+            hsm.Trigger(trigger);
+            
+            Assert.That(hsm.IsInState(stateId2), "State machine has transitioned 2 times");
+            
+            Received.InOrder(() =>
+            {
+                stateObj1.Enter();
+                stateObj2.Enter();
+                stateObj4.Enter();
+                stateObj4.Exit();
+                stateObj2.Exit();
+                stateObj3.Enter();
+                stateObj3.Exit();
+                stateObj2.Enter();
+                stateObj4.Enter();
+            });
+        }
+
+        [Test]
+        public void Do_Not_Transition_If_Switching_To_Target_State_Is_Invalid()
+        {
+            var hsm = NewStateMachine();
+
+            var stateId1 = 1;
+            var stateId2 = 2;
+            var stateId3 = 3;
+            var stateId4 = 4;
+            
+            var stateObj1 = Substitute.For<IState>();
+            var stateObj2 = Substitute.For<IState>();
+            var stateObj3 = Substitute.For<IState>();
+            var stateObj4 = Substitute.For<IState>();
+            
+            var trigger = 0;
+
+            var transition = NewTransition(stateId4, trigger, stateId3);
+            
+            hsm.AddState(stateId1, stateObj1);
+            hsm.AddState(stateId2, stateObj2);
+            hsm.AddState(stateId3, stateObj3);
+            hsm.AddState(stateId4, stateObj4);
+            
+            hsm.SetChildTo(stateId1, stateId2);
+            hsm.SetChildTo(stateId1, stateId3);
+            
+            hsm.SetChildTo(stateId2, stateId4);
+            
+            hsm.AddTransition(transition);
+            
+            hsm.Start();
+            
+            hsm.Trigger(trigger);
+            
+            Assert.That(hsm.IsInState(stateId4), "Did not transitioned");
         }
     }
 }

@@ -19,7 +19,7 @@ namespace Paps.StateMachines
 
         public int TransitionCount => _transitionManager.TransitionCount;
 
-        public bool IsStarted { get; private set; }
+        public bool IsStarted => _internalState != InternalState.Stopped;
 
         public TState InitialState
         {
@@ -208,10 +208,10 @@ namespace Paps.StateMachines
 
         public void Start()
         {
-            ValidateIsStarted();
+            ValidateIsNotStarted();
             ValidateIsNotEmpty();
-
-            IsStarted = true;
+            
+            SetInternalState(InternalState.Idle);
 
             _stateHierarchyBehaviourScheduler.Enter();
         }
@@ -221,9 +221,24 @@ namespace Paps.StateMachines
             if (StateCount == 0) throw new EmptyStateMachineException();
         }
 
+        private void SetInternalState(InternalState state)
+        {
+            _internalState = state;
+        }
+
         private void ValidateIsStarted()
         {
             ValidateIsNotIn(InternalState.Stopped);
+        }
+
+        private void ValidateIsNotStarted()
+        {
+            ValidateIsIn(InternalState.Stopped);
+        }
+
+        private void ValidateIsIn(InternalState state)
+        {
+            if(_internalState != state) ThrowByInternalState();
         }
 
         private void ValidateIsNotIn(InternalState internalState)
@@ -254,7 +269,7 @@ namespace Paps.StateMachines
             {
                 _stateHierarchyBehaviourScheduler.Exit();
 
-                IsStarted = false;
+                SetInternalState(InternalState.Stopped);
             }
         }
 
