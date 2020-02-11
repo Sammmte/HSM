@@ -11,8 +11,10 @@ namespace Paps.StateMachines
 
         private IEqualityComparer<TState> _stateComparer;
 
-        public event ActiveHierarchyPathChanged OnBeforeActiveHierarchyPathChanges;
-        public event ActiveHierarchyPathChanged OnActiveHierarchyPathChanged;
+        public event Action OnBeforeActiveHierarchyPathChanges;
+        public event Action OnActiveHierarchyPathChanged;
+
+        public event Action OnTransitionFinished;
 
         public StateHierarchyBehaviourScheduler(StateHierarchy<TState> stateHierarchy, IEqualityComparer<TState> stateComparer)
         {
@@ -154,6 +156,8 @@ namespace Paps.StateMachines
             OnActiveHierarchyPathChanged?.Invoke();
 
             EnterActivesFrom(newActiveState);
+            
+            OnTransitionFinished?.Invoke();
         }
     }
 }

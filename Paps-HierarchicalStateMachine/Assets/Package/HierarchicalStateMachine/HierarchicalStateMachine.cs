@@ -36,12 +36,12 @@ namespace Paps.StateMachines
             }
         }
 
-        public event ActiveHierarchyPathChanged OnBeforeHierarchyChanges
+        public event Action OnBeforeActiveHierarchyPathChanges
         {
             add { _stateHierarchyBehaviourScheduler.OnBeforeActiveHierarchyPathChanges += value; }
             remove { _stateHierarchyBehaviourScheduler.OnBeforeActiveHierarchyPathChanges -= value; }
         }
-        public event ActiveHierarchyPathChanged OnHierarchyChanged
+        public event Action OnActiveHierarchyPathChanged
         {
             add { _stateHierarchyBehaviourScheduler.OnActiveHierarchyPathChanged += value; }
             remove { _stateHierarchyBehaviourScheduler.OnActiveHierarchyPathChanged -= value; }
@@ -74,6 +74,21 @@ namespace Paps.StateMachines
             _stateHierarchyBehaviourScheduler = new StateHierarchyBehaviourScheduler<TState>(_stateHierarchy, _stateComparer);
             _transitionValidator = new TransitionValidator<TState, TTrigger>(_stateComparer, _triggerComparer, _stateHierarchyBehaviourScheduler);
             _transitionManager = new TransitionManager<TState, TTrigger>(_stateComparer, _triggerComparer, _stateHierarchyBehaviourScheduler, _transitionValidator);
+
+            SubscribeToEventsForInternalStateChanging();
+        }
+
+        private void SubscribeToEventsForInternalStateChanging()
+        {
+            OnBeforeActiveHierarchyPathChanges += () => SetInternalState(InternalState.Transitioning);
+
+            _stateHierarchyBehaviourScheduler.OnTransitionFinished +=
+                () => SetInternalState(InternalState.EvaluatingTransitions);
+
+            _transitionManager.OnTransitionEvaluationBegan +=
+                () => SetInternalState(InternalState.EvaluatingTransitions);
+            _transitionManager.OnTransitionEvaluationFinished +=
+                () => SetInternalState(InternalState.Idle);
         }
 
         public HierarchicalStateMachine() : this(EqualityComparer<TState>.Default, EqualityComparer<TTrigger>.Default)
@@ -277,7 +292,7 @@ namespace Paps.StateMachines
         {
             ValidateIsStarted();
             ValidateIsNotIn(InternalState.Stopping);
-
+            
             _transitionManager.Trigger(trigger);
         }
 

@@ -67,8 +67,7 @@ namespace Paps.StateMachines
 
         public bool IsValid(Transition<TState, TTrigger> transition)
         {
-            if (_stateHierarchyBehaviourScheduler.IsValidSwitchTo(transition.StateTo, out TState _) == false)
-                return false;
+            if (!HasValidSourceAndTargetStates(transition)) return false;
 
             if (_guardConditions.ContainsKey(transition))
             {
@@ -82,6 +81,23 @@ namespace Paps.StateMachines
             }
 
             return true;
+        }
+
+        private bool HasValidSourceAndTargetStates(Transition<TState, TTrigger> transition)
+        {
+            if (_stateHierarchyBehaviourScheduler
+                    .IsValidSwitchTo(transition.StateTo, out TState activeSibling) == false ||
+                AreEquals(transition.StateFrom, activeSibling) == false)
+            {
+                return false;
+            }
+            
+            return true;
+        }
+
+        private bool AreEquals(TState stateId1, TState stateId2)
+        {
+            return _stateComparer.Equals(stateId1, stateId2);
         }
     }
 

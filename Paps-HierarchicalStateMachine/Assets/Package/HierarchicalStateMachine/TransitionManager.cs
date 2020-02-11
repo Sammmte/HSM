@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace Paps.StateMachines
@@ -17,7 +18,10 @@ namespace Paps.StateMachines
         private HashSet<Transition<TState, TTrigger>> _transitions;
         private Queue<TTrigger> _pendingTriggers;
 
-        private bool _isEvaluatingTransitions;
+        public event Action OnTransitionEvaluationBegan;
+        public event Action OnTransitionEvaluationFinished;
+
+        public bool IsEvaluatingTransitions { get; private set; }
 
         public TransitionManager(IEqualityComparer<TState> stateComparer, IEqualityComparer<TTrigger> triggerComparer, 
             StateHierarchyBehaviourScheduler<TState> stateHierarchyBehaviourScheduler, ITransitionValidator<TState, TTrigger> transitionValidator)
@@ -56,13 +60,17 @@ namespace Paps.StateMachines
         {
             _pendingTriggers.Enqueue(trigger);
 
-            if (_isEvaluatingTransitions == false)
+            if (IsEvaluatingTransitions == false)
             {
-                _isEvaluatingTransitions = true;
+                IsEvaluatingTransitions = true;
+                
+                OnTransitionEvaluationBegan?.Invoke();
                 
                 ProcessPendingTriggers();
 
-                _isEvaluatingTransitions = false;
+                IsEvaluatingTransitions = false;
+                
+                OnTransitionEvaluationFinished?.Invoke();
             }
         }
 

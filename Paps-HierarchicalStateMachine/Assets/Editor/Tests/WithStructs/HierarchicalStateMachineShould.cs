@@ -1405,5 +1405,271 @@ namespace Tests.WithStructs
             
             Assert.That(hsm.IsInState(stateId4), "Did not transitioned");
         }
+
+        [Test]
+        public void Call_Guard_Conditions_When_Evaluating_Transitions()
+        {
+            var hsm = NewStateMachine();
+
+            var stateId1 = 1;
+            var stateId2 = 2;
+
+            var stateObj = Substitute.For<IState>();
+            
+            var trigger = 0;
+
+            var transition = NewTransition(stateId1, trigger, stateId2);
+
+            var guardCondition = Substitute.For<IGuardCondition>();
+            
+            hsm.AddState(stateId1, stateObj);
+            hsm.AddState(stateId2, stateObj);
+            
+            hsm.AddTransition(transition);
+            
+            hsm.AddGuardConditionTo(transition, guardCondition);
+            
+            hsm.Start();
+            
+            hsm.Trigger(trigger);
+
+            guardCondition.Received(1).IsValid();
+        }
+
+        [Test]
+        public void Deny_Transition_If_Any_Guard_Condition_Returned_False()
+        {
+            var hsm = NewStateMachine();
+
+            var stateId1 = 1;
+            var stateId2 = 2;
+
+            var stateObj = Substitute.For<IState>();
+            
+            var trigger = 0;
+
+            var transition = NewTransition(stateId1, trigger, stateId2);
+
+            var guardCondition1 = Substitute.For<IGuardCondition>();
+            var guardCondition2 = Substitute.For<IGuardCondition>();
+
+            guardCondition1.IsValid().Returns(false);
+            guardCondition2.IsValid().Returns(true);
+
+            hsm.AddState(stateId1, stateObj);
+            hsm.AddState(stateId2, stateObj);
+            
+            hsm.AddTransition(transition);
+            
+            hsm.AddGuardConditionTo(transition, guardCondition1);
+            hsm.AddGuardConditionTo(transition, guardCondition2);
+            
+            hsm.Start();
+            
+            hsm.Trigger(trigger);
+
+            guardCondition1.Received(1).IsValid();
+            guardCondition2.DidNotReceive().IsValid();
+            
+            Assert.That(hsm.IsInState(stateId1), "Did not transitioned");
+        }
+
+        [Test]
+        public void Permit_Transition_If_All_Guard_Conditions_Returned_True()
+        {
+            var hsm = NewStateMachine();
+
+            var stateId1 = 1;
+            var stateId2 = 2;
+
+            var stateObj = Substitute.For<IState>();
+            
+            var trigger = 0;
+
+            var transition = NewTransition(stateId1, trigger, stateId2);
+
+            var guardCondition1 = Substitute.For<IGuardCondition>();
+            var guardCondition2 = Substitute.For<IGuardCondition>();
+
+            guardCondition1.IsValid().Returns(true);
+            guardCondition2.IsValid().Returns(true);
+
+            hsm.AddState(stateId1, stateObj);
+            hsm.AddState(stateId2, stateObj);
+            
+            hsm.AddTransition(transition);
+            
+            hsm.AddGuardConditionTo(transition, guardCondition1);
+            hsm.AddGuardConditionTo(transition, guardCondition2);
+            
+            hsm.Start();
+            
+            hsm.Trigger(trigger);
+
+            guardCondition1.Received(1).IsValid();
+            guardCondition2.Received(1).IsValid();
+            
+            Assert.That(hsm.IsInState(stateId2), "Did transitioned");
+        }
+
+        [Test]
+        public void Choose_Valid_Transition_For_Switching_If_There_Is_More_Than_One_With_Same_Source_And_Trigger_With_Different_Target()
+        {
+            var hsm = NewStateMachine();
+
+            var stateId1 = 1;
+            var stateId2 = 2;
+            var stateId3 = 3;
+
+            var stateObj = Substitute.For<IState>();
+            
+            var trigger = 0;
+
+            var transition1 = NewTransition(stateId1, trigger, stateId2);
+            var transition2 = NewTransition(stateId1, trigger, stateId3);
+
+            var guardCondition1 = Substitute.For<IGuardCondition>();
+            var guardCondition2 = Substitute.For<IGuardCondition>();
+
+            guardCondition1.IsValid().Returns(false);
+            guardCondition2.IsValid().Returns(true);
+
+            hsm.AddState(stateId1, stateObj);
+            hsm.AddState(stateId2, stateObj);
+            hsm.AddState(stateId3, stateObj);
+            
+            hsm.AddTransition(transition1);
+            hsm.AddTransition(transition2);
+            
+            hsm.AddGuardConditionTo(transition1, guardCondition1);
+            hsm.AddGuardConditionTo(transition2, guardCondition2);
+            
+            hsm.Start();
+            
+            hsm.Trigger(trigger);
+
+            guardCondition1.Received(1).IsValid();
+            guardCondition2.Received(1).IsValid();
+            
+            Assert.That(hsm.IsInState(stateId3), "Transitioned to " + stateId3);
+        }
+
+        [Test]
+        public void Throw_An_Exception_If_User_Tries_To_Trigger_When_State_Machine_Is_Not_Started()
+        {
+            var hsm = NewStateMachine();
+
+            var trigger = 0;
+            
+            Assert.Throws<StateMachineNotStartedException>(() => hsm.Trigger(trigger));
+        }
+
+        [Test]
+        public void Throw_An_Exception_If_There_Is_More_Than_One_Valid_Transition_For_The_Same_Target_And_Trigger()
+        {
+            var hsm = NewStateMachine();
+
+            var stateId1 = 1;
+            var stateId2 = 2;
+            var stateId3 = 3;
+
+            var stateObj = Substitute.For<IState>();
+            
+            var trigger = 0;
+
+            var transition1 = NewTransition(stateId1, trigger, stateId2);
+            var transition2 = NewTransition(stateId1, trigger, stateId3);
+
+            var guardCondition1 = Substitute.For<IGuardCondition>();
+            var guardCondition2 = Substitute.For<IGuardCondition>();
+
+            guardCondition1.IsValid().Returns(true);
+            guardCondition2.IsValid().Returns(true);
+
+            hsm.AddState(stateId1, stateObj);
+            hsm.AddState(stateId2, stateObj);
+            hsm.AddState(stateId3, stateObj);
+            
+            hsm.AddTransition(transition1);
+            hsm.AddTransition(transition2);
+            
+            hsm.AddGuardConditionTo(transition1, guardCondition1);
+            hsm.AddGuardConditionTo(transition2, guardCondition2);
+            
+            hsm.Start();
+
+            Assert.Throws<MultipleValidTransitionsFromSameStateException>(() => hsm.Trigger(trigger));
+        }
+
+        [Test]
+        public void Call_On_Before_Active_Hierarchy_Path_Changes_Event_Before_Previous_States_Exit()
+        {
+            var hsm = NewStateMachine();
+
+            var stateId1 = 1;
+            var stateId2 = 2;
+
+            var stateObj1 = Substitute.For<IState>();
+            var stateObj2 = Substitute.For<IState>();
+
+            var trigger = 0;
+
+            var transition = NewTransition(stateId1, trigger, stateId2);
+
+            var eventHandler = Substitute.For<Action>();
+            
+            hsm.AddState(stateId1, stateObj1);
+            hsm.AddState(stateId2, stateObj2);
+            
+            hsm.AddTransition(transition);
+
+            hsm.OnBeforeActiveHierarchyPathChanges += eventHandler;
+            
+            hsm.Start();
+            
+            hsm.Trigger(trigger);
+            
+            Received.InOrder(() =>
+            {
+                eventHandler.Invoke();
+                stateObj1.Exit();
+            });
+        }
+        
+        [Test]
+        public void Call_On_Active_Hierarchy_Path_Changed_Event_After_Previous_States_Exit_And_Before_Next_States_Enter()
+        {
+            var hsm = NewStateMachine();
+
+            var stateId1 = 1;
+            var stateId2 = 2;
+
+            var stateObj1 = Substitute.For<IState>();
+            var stateObj2 = Substitute.For<IState>();
+
+            var trigger = 0;
+
+            var transition = NewTransition(stateId1, trigger, stateId2);
+
+            var eventHandler = Substitute.For<Action>();
+            
+            hsm.AddState(stateId1, stateObj1);
+            hsm.AddState(stateId2, stateObj2);
+            
+            hsm.AddTransition(transition);
+
+            hsm.OnActiveHierarchyPathChanged += eventHandler;
+            
+            hsm.Start();
+            
+            hsm.Trigger(trigger);
+            
+            Received.InOrder(() =>
+            {
+                stateObj1.Exit();
+                eventHandler.Invoke();
+                stateObj2.Enter();
+            });
+        }
     }
 }
