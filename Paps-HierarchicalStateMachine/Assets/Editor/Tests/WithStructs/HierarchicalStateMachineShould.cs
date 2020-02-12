@@ -474,6 +474,16 @@ namespace Tests.WithStructs
         }
 
         [Test]
+        public void Return_Null_If_User_Asks_For_All_States_And_There_Is_None()
+        {
+            var hsm = NewStateMachine();
+
+            var states = hsm.GetStates();
+
+            Assert.IsNull(states);
+        }
+
+        [Test]
         public void Set_Initial_Child_State_To_A_State()
         {
             var hsm = NewStateMachine();
@@ -853,6 +863,14 @@ namespace Tests.WithStructs
         }
 
         [Test]
+        public void Throw_An_Exception_If_User_Tries_To_Update_And_State_Machine_Was_Not_Started()
+        {
+            var hsm = NewStateMachine();
+
+            Assert.Throws<StateMachineNotStartedException>(hsm.Update);
+        }
+
+        [Test]
         public void Set_Initial_State_Automatically_When_The_First_State_Is_Added()
         {
             var hsm = NewStateMachine();
@@ -1106,6 +1124,14 @@ namespace Tests.WithStructs
         }
 
         [Test]
+        public void Return_Null_If_User_Asks_For_All_Transitions_And_There_Is_None()
+        {
+            var hsm = NewStateMachine();
+
+            Assert.IsNull(hsm.GetTransitions());
+        }
+
+        [Test]
         public void Add_Guard_Conditions_To_Transitions()
         {
             var hsm = NewStateMachine();
@@ -1157,6 +1183,40 @@ namespace Tests.WithStructs
             hsm.RemoveGuardConditionFrom(transition, guardCondition);
 
             Assert.That(hsm.ContainsGuardConditionOn(transition, guardCondition) == false, "Transition does not contains guard condition");
+        }
+
+        [Test]
+        public void Throw_An_Exception_If_User_Tries_To_Add_A_Guard_Condition_To_State_That_Was_Not_Added()
+        {
+            var hsm = NewStateMachine();
+
+            var stateId1 = 1;
+            var stateId2 = 2;
+
+            var trigger = 0;
+
+            var transition = NewTransition(stateId1, trigger, stateId2);
+
+            var guardCondition = Substitute.For<IGuardCondition>();
+
+            Assert.Throws<TransitionNotAddedException>(() => hsm.AddGuardConditionTo(transition, guardCondition));
+        }
+
+        [Test]
+        public void Throw_An_Exception_If_User_Asks_If_State_Machine_Contains_Guard_Condition_On_A_Transition_That_Was_Not_Added()
+        {
+            var hsm = NewStateMachine();
+
+            var stateId1 = 1;
+            var stateId2 = 2;
+
+            var trigger = 0;
+
+            var transition = NewTransition(stateId1, trigger, stateId2);
+
+            var guardCondition = Substitute.For<IGuardCondition>();
+
+            Assert.Throws<TransitionNotAddedException>(() => hsm.ContainsGuardConditionOn(transition, guardCondition));
         }
 
         [Test]
@@ -1670,6 +1730,217 @@ namespace Tests.WithStructs
                 eventHandler.Invoke();
                 stateObj2.Enter();
             });
+        }
+
+        [Test]
+        public void Throw_An_Exception_If_User_Tries_To_Add_A_Transitions_While_Evaluating_Transitions()
+        {
+            var hsm = NewStateMachine();
+
+            var stateId1 = 1;
+            var stateId2 = 2;
+
+            var stateObj = Substitute.For<IState>();
+
+            var trigger = 0;
+
+            var transition1 = NewTransition(stateId1, trigger, stateId2);
+            var transition2 = NewTransition(stateId2, trigger, stateId1);
+
+            var guardCondition = Substitute.For<IGuardCondition>();
+
+            guardCondition.When(g => g.IsValid()).Do(callback => hsm.AddTransition(transition2));
+
+            hsm.AddState(stateId1, stateObj);
+            hsm.AddState(stateId2, stateObj);
+
+            hsm.AddTransition(transition1);
+
+            hsm.AddGuardConditionTo(transition1, guardCondition);
+
+            hsm.Start();
+
+            Assert.Throws<StateMachineEvaluatingTransitionsException>(() => hsm.Trigger(trigger));
+        }
+
+        [Test]
+        public void Throw_An_Exception_If_User_Tries_To_Add_Guard_Conditions_While_Evaluating_Transitions()
+        {
+            var hsm = NewStateMachine();
+
+            var stateId1 = 1;
+            var stateId2 = 2;
+
+            var stateObj = Substitute.For<IState>();
+
+            var trigger = 0;
+
+            var transition = NewTransition(stateId1, trigger, stateId2);
+
+            var guardCondition1 = Substitute.For<IGuardCondition>();
+            var guardCondition2 = Substitute.For<IGuardCondition>();
+
+            guardCondition1.When(g => g.IsValid()).Do(callback => hsm.AddGuardConditionTo(transition, guardCondition2));
+
+            hsm.AddState(stateId1, stateObj);
+            hsm.AddState(stateId2, stateObj);
+
+            hsm.AddTransition(transition);
+
+            hsm.AddGuardConditionTo(transition, guardCondition1);
+
+            hsm.Start();
+
+            Assert.Throws<StateMachineEvaluatingTransitionsException>(() => hsm.Trigger(trigger));
+        }
+
+        [Test]
+        public void Throw_An_Exception_If_User_Tries_To_Remove_States_While_Evaluating_Transitions()
+        {
+            var hsm = NewStateMachine();
+
+            var stateId1 = 1;
+            var stateId2 = 2;
+
+            var stateObj = Substitute.For<IState>();
+
+            var trigger = 0;
+
+            var transition = NewTransition(stateId1, trigger, stateId2);
+
+            var guardCondition = Substitute.For<IGuardCondition>();
+
+            guardCondition.When(g => g.IsValid()).Do(callback => hsm.RemoveState(stateId1));
+
+            hsm.AddState(stateId1, stateObj);
+            hsm.AddState(stateId2, stateObj);
+
+            hsm.AddTransition(transition);
+
+            hsm.AddGuardConditionTo(transition, guardCondition);
+
+            hsm.Start();
+
+            Assert.Throws<StateMachineEvaluatingTransitionsException>(() => hsm.Trigger(trigger));
+        }
+
+        [Test]
+        public void Throw_An_Exception_If_User_Tries_To_Trigger_While_Stopping()
+        {
+            var hsm = NewStateMachine();
+
+            var stateId1 = 1;
+            var stateId2 = 2;
+
+            var stateObj = Substitute.For<IState>();
+
+            var trigger = 0;
+
+            stateObj.When(state => state.Exit()).Do(callback => hsm.Trigger(trigger));
+
+            var transition = NewTransition(stateId1, trigger, stateId2);
+
+            hsm.AddState(stateId1, stateObj);
+            hsm.AddState(stateId2, stateObj);
+
+            hsm.AddTransition(transition);
+
+            hsm.Start();
+
+            Assert.Throws<StateMachineStoppingException>(() => hsm.Stop());
+        }
+
+        [Test]
+        public void Reenter_State_If_Source_Is_Equals_To_Target()
+        {
+            var hsm = NewStateMachine();
+
+            var stateId1 = 1;
+            var stateId2 = 2;
+
+            var stateObj1 = Substitute.For<IState>();
+            var stateObj2 = Substitute.For<IState>();
+
+            var trigger = 0;
+
+            var transition = NewTransition(stateId1, trigger, stateId1);
+
+            hsm.AddState(stateId1, stateObj1);
+            hsm.AddState(stateId2, stateObj2);
+
+            hsm.SetChildTo(stateId1, stateId2);
+
+            hsm.AddTransition(transition);
+
+            hsm.Start();
+
+            hsm.Trigger(trigger);
+
+            stateObj1.Received(2).Enter();
+            stateObj1.Received(1).Exit();
+
+            stateObj2.Received(2).Enter();
+            stateObj2.Received(1).Exit();
+        }
+
+        [Test]
+        public void Throw_An_Exception_If_User_Tries_To_Remove_A_State_That_Is_In_The_Active_Hierarchy_Path()
+        {
+            var hsm = NewStateMachine();
+
+            var stateId1 = 1;
+            var stateId2 = 2;
+
+            var stateObj1 = Substitute.For<IState>();
+            var stateObj2 = Substitute.For<IState>();
+
+            hsm.AddState(stateId1, stateObj1);
+            hsm.AddState(stateId2, stateObj2);
+
+            hsm.SetChildTo(stateId1, stateId2);
+
+            hsm.Start();
+
+            Assert.Throws<InvalidOperationException>(() => hsm.RemoveState(stateId1));
+            Assert.Throws<InvalidOperationException>(() => hsm.RemoveState(stateId2));
+        }
+
+        [Test]
+        public void Throw_An_Exception_If_User_Tries_To_Remove_The_Next_State_Or_An_Initial_Child_State_At_Any_Level_While_In_Transition()
+        {
+            var hsm = NewStateMachine();
+
+            var stateId1 = 1;
+            var stateId2 = 2;
+            var stateId3 = 3;
+            var stateId4 = 4;
+            var stateId5 = 5;
+
+            var stateObj1 = Substitute.For<IState>();
+            var stateObj2 = Substitute.For<IState>();
+
+            var trigger = 0;
+
+            var transition = NewTransition(stateId1, trigger, stateId2);
+
+            stateObj1.When(state => state.Exit()).Do(callback => hsm.RemoveState(stateId4));
+
+            hsm.AddState(stateId1, stateObj1);
+            hsm.AddState(stateId2, stateObj2);
+            hsm.AddState(stateId3, stateObj2);
+            hsm.AddState(stateId4, stateObj2);
+            hsm.AddState(stateId5, stateObj2);
+
+            hsm.SetChildTo(stateId2, stateId3);
+            hsm.SetChildTo(stateId3, stateId4);
+
+            hsm.SetChildTo(stateId3, stateId5);
+
+            hsm.AddTransition(transition);
+
+            hsm.Start();
+
+            Assert.Throws<ProtectedStateException>(() => hsm.Trigger(trigger));
         }
     }
 }

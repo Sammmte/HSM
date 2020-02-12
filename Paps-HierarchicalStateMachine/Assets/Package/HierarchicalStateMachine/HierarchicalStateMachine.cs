@@ -49,7 +49,6 @@ namespace Paps.StateMachines
 
         private Comparer<TState> _stateComparer;
         private Comparer<TTrigger> _triggerComparer;
-        private TransitionEqualityComparer<TState, TTrigger> _transitionEqualityComparer;
 
         private StateHierarchy<TState> _stateHierarchy;
         private StateHierarchyBehaviourScheduler<TState> _stateHierarchyBehaviourScheduler;
@@ -57,6 +56,7 @@ namespace Paps.StateMachines
         private TransitionManager<TState, TTrigger> _transitionManager;
 
         private InternalState _internalState;
+        private Transition<TState, TTrigger> _currentValidatedTransition;
 
         public HierarchicalStateMachine(IEqualityComparer<TState> stateComparer, IEqualityComparer<TTrigger> triggerComparer)
         {
@@ -65,7 +65,6 @@ namespace Paps.StateMachines
 
             _stateComparer = new Comparer<TState>();
             _triggerComparer = new Comparer<TTrigger>();
-            _transitionEqualityComparer = new TransitionEqualityComparer<TState, TTrigger>(_stateComparer, _triggerComparer);
 
             SetStateComparer(stateComparer);
             SetTriggerComparer(triggerComparer);
@@ -76,6 +75,12 @@ namespace Paps.StateMachines
             _transitionManager = new TransitionManager<TState, TTrigger>(_stateComparer, _triggerComparer, _stateHierarchyBehaviourScheduler, _transitionValidator);
 
             SubscribeToEventsForInternalStateChanging();
+            SubscribeToEventsForSavingValidTransition();
+        }
+
+        public HierarchicalStateMachine() : this(EqualityComparer<TState>.Default, EqualityComparer<TTrigger>.Default)
+        {
+
         }
 
         private void SubscribeToEventsForInternalStateChanging()
@@ -91,9 +96,10 @@ namespace Paps.StateMachines
                 () => SetInternalState(InternalState.Idle);
         }
 
-        public HierarchicalStateMachine() : this(EqualityComparer<TState>.Default, EqualityComparer<TTrigger>.Default)
+        private void SubscribeToEventsForSavingValidTransition()
         {
-
+            _transitionManager.OnTransitionValidated += transition => _currentValidatedTransition = _currentValidatedTransition = transition;
+            _stateHierarchyBehaviourScheduler.OnActiveHierarchyPathChanged += () => _currentValidatedTransition = default;
         }
 
         public void SetStateComparer(IEqualityComparer<TState> stateComparer)
@@ -109,6 +115,7 @@ namespace Paps.StateMachines
         public void AddGuardConditionTo(Transition<TState, TTrigger> transition, IGuardCondition guardCondition)
         {
             ValidateContainsTransition(transition);
+            ValidateIsNotIn(InternalState.EvaluatingTransitions);
 
             _transitionValidator.AddGuardConditionTo(transition, guardCondition);
         }
@@ -122,6 +129,7 @@ namespace Paps.StateMachines
         {
             ValidateContainsId(transition.StateFrom);
             ValidateContainsId(transition.StateTo);
+            ValidateIsNotIn(InternalState.EvaluatingTransitions);
 
             _transitionManager.AddTransition(transition);
         }
@@ -198,16 +206,50 @@ namespace Paps.StateMachines
 
         public bool RemoveState(TState stateId)
         {
-            return _stateHierarchy.RemoveState(stateId);
+            if(ContainsState(stateId))
+            {
+                ValidateIsNotIn(InternalState.EvaluatingTransitions);
+                ValidateIsNotInActiveHierarchy(stateId);
+                ValidateIsNotNextStateOrInitialChildOfNextStateOnTransition(stateId);
+
+                return _stateHierarchy.RemoveState(stateId);
+            }
+
+            return false;
+        }
+
+        private void ValidateIsNotNextStateOrInitialChildOfNextStateOnTransition(TState stateId)
+        {
+            if (_internalState == InternalState.Transitioning &&
+                IsInTheNextInitialActiveHierarchyPath(stateId)
+                )
+            {
+                throw new ProtectedStateException("Cannot remove protected state " + stateId + " because it takes part on the current transition");
+            }
+        }
+
+        private bool IsInTheNextInitialActiveHierarchyPath(TState stateId)
+        {
+            return (AreEquals(_currentValidatedTransition.StateTo, stateId) ||
+                            _stateHierarchy.AreParentAndInitialChildAtAnyLevel(_currentValidatedTransition.StateTo, stateId));
+        }
+
+        private void ValidateIsNotInActiveHierarchy(TState stateId)
+        {
+            if (IsInState(stateId)) throw new InvalidOperationException("Cannot remove state because it is in the active hierarchy path");
         }
 
         public bool RemoveChildFrom(TState superState, TState substate)
         {
+            ValidateIsNotIn(InternalState.EvaluatingTransitions);
+
             return _stateHierarchy.RemoveChildFrom(superState, substate);
         }
 
         public bool RemoveTransition(Transition<TState, TTrigger> transition)
         {
+            ValidateIsNotIn(InternalState.EvaluatingTransitions);
+
             return _transitionManager.RemoveTransition(transition);
         }
 
@@ -218,6 +260,8 @@ namespace Paps.StateMachines
 
         public void SetChildTo(TState superState, TState substate)
         {
+            ValidateIsNotIn(InternalState.EvaluatingTransitions);
+
             _stateHierarchy.AddChildTo(superState, substate);
         }
 
@@ -239,43 +283,6 @@ namespace Paps.StateMachines
         private void SetInternalState(InternalState state)
         {
             _internalState = state;
-        }
-
-        private void ValidateIsStarted()
-        {
-            ValidateIsNotIn(InternalState.Stopped);
-        }
-
-        private void ValidateIsNotStarted()
-        {
-            ValidateIsIn(InternalState.Stopped);
-        }
-
-        private void ValidateIsIn(InternalState state)
-        {
-            if(_internalState != state) ThrowByInternalState();
-        }
-
-        private void ValidateIsNotIn(InternalState internalState)
-        {
-            if(_internalState == internalState) ThrowByInternalState();
-        }
-        
-        private void ThrowByInternalState()
-        {
-            switch (_internalState)
-            {
-                case InternalState.Stopped:
-                    throw new StateMachineNotStartedException();
-                case InternalState.Stopping:
-                    throw new StateMachineStoppingException();
-                case InternalState.Transitioning:
-                    throw new StateMachineTransitioningException();
-                case InternalState.EvaluatingTransitions:
-                    throw new StateMachineEvaluatingTransitionsException();
-                case InternalState.Idle:
-                    throw new StateMachineStartedException();
-            }
         }
 
         public void Stop()
@@ -300,6 +307,8 @@ namespace Paps.StateMachines
 
         public void Update()
         {
+            ValidateIsStarted();
+
             _stateHierarchyBehaviourScheduler.Update();
         }
 
@@ -364,6 +373,48 @@ namespace Paps.StateMachines
                 throw new TransitionNotAddedException(transition.StateFrom.ToString(),
                     transition.Trigger.ToString(),
                     transition.StateTo.ToString());
+        }
+
+        private void ValidateIsStarted()
+        {
+            ValidateIsNotIn(InternalState.Stopped);
+        }
+
+        private void ValidateIsNotStarted()
+        {
+            ValidateIsIn(InternalState.Stopped);
+        }
+
+        private void ValidateIsIn(InternalState state)
+        {
+            if (_internalState != state) ThrowByInternalState();
+        }
+
+        private void ValidateIsNotIn(InternalState internalState)
+        {
+            if (_internalState == internalState) ThrowByInternalState();
+        }
+
+        private void ThrowByInternalState()
+        {
+            switch (_internalState)
+            {
+                case InternalState.Stopped:
+                    throw new StateMachineNotStartedException();
+                case InternalState.Stopping:
+                    throw new StateMachineStoppingException();
+                case InternalState.Transitioning:
+                    throw new StateMachineTransitioningException();
+                case InternalState.EvaluatingTransitions:
+                    throw new StateMachineEvaluatingTransitionsException();
+                case InternalState.Idle:
+                    throw new StateMachineStartedException();
+            }
+        }
+
+        private bool AreEquals(TState stateId1, TState stateId2)
+        {
+            return _stateComparer.Equals(stateId1, stateId2);
         }
 
         private class Comparer<T> : IEqualityComparer<T>

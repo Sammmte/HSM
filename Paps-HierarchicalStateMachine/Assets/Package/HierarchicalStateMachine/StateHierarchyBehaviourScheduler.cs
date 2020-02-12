@@ -130,7 +130,8 @@ namespace Paps.StateMachines
         {
             for(int i = 0; i < _activeHierarchyPath.Count; i++)
             {
-                if (_stateHierarchy.AreSiblings(_activeHierarchyPath[i].Key, stateId))
+                if (AreEquals(_activeHierarchyPath[i].Key, stateId) ||
+                    _stateHierarchy.AreSiblings(_activeHierarchyPath[i].Key, stateId))
                 {
                     activeSibling = _activeHierarchyPath[i].Key;
                     return true;

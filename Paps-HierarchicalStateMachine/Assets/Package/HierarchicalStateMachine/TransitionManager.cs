@@ -20,6 +20,7 @@ namespace Paps.StateMachines
 
         public event Action OnTransitionEvaluationBegan;
         public event Action OnTransitionEvaluationFinished;
+        public event Action<Transition<TState, TTrigger>> OnTransitionValidated;
 
         public bool IsEvaluatingTransitions { get; private set; }
 
@@ -53,7 +54,10 @@ namespace Paps.StateMachines
 
         public Transition<TState, TTrigger>[] GetTransitions()
         {
-            return _transitions.ToArray();
+            if (_transitions.Count > 0)
+                return _transitions.ToArray();
+            else
+                return null;
         }
 
         public void Trigger(TTrigger trigger)
@@ -80,7 +84,7 @@ namespace Paps.StateMachines
             {
                 var activeHierarchyPath = _stateHierarchyBehaviourScheduler.GetActiveHierarchyPath();
                 var trigger = _pendingTriggers.Dequeue();
-                TState finalStateTo = default;
+                Transition<TState, TTrigger> validTransition = default;
             
                 bool hasOneValid = false;
 
@@ -102,7 +106,7 @@ namespace Paps.StateMachines
                                 else
                                 {
                                     hasOneValid = true;
-                                    finalStateTo = transition.StateTo;
+                                    validTransition = transition;
                                 }
                                     
                             }
@@ -111,7 +115,11 @@ namespace Paps.StateMachines
                 }
                 
                 if(hasOneValid)
-                    _stateHierarchyBehaviourScheduler.SwitchTo(finalStateTo);
+                {
+                    OnTransitionValidated?.Invoke(validTransition);
+                    _stateHierarchyBehaviourScheduler.SwitchTo(validTransition.StateTo);
+                }
+                    
             }
         }
 

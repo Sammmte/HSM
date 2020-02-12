@@ -213,7 +213,10 @@ namespace Paps.StateMachines
 
         public TState[] GetStates()
         {
-            return _states.Keys.ToArray();
+            if (_states.Count > 0)
+                return _states.Keys.ToArray();
+            else
+                return null;
         }
 
         public TState[] GetRoots()
@@ -313,6 +316,9 @@ namespace Paps.StateMachines
             ValidateContainsId(stateId1);
             ValidateContainsId(stateId2);
 
+            if (AreEquals(stateId1, stateId2))
+                return false;
+
             return NodeOf(stateId1).Parent == NodeOf(stateId2).Parent;
         }
 
@@ -320,6 +326,9 @@ namespace Paps.StateMachines
         {
             ValidateContainsId(stateId1);
             ValidateContainsId(stateId2);
+
+            if (AreEquals(stateId1, stateId2))
+                return false;
 
             if(IsRoot(stateId1) == false)
             {
@@ -349,6 +358,24 @@ namespace Paps.StateMachines
             {
                 if (AreParentAndChildAtAnyLevel(childId, child))
                     return true;
+            }
+
+            return false;
+        }
+
+        public bool AreParentAndInitialChildAtAnyLevel(TState parent, TState child)
+        {
+            ValidateContainsId(parent);
+            ValidateContainsId(child);
+
+            var node = NodeOf(parent);
+
+            while(ChildCountOf(node.StateId) != 0)
+            {
+                if (AreEquals(node.InitialState, child))
+                    return true;
+
+                node = NodeOf(node.InitialState);
             }
 
             return false;
