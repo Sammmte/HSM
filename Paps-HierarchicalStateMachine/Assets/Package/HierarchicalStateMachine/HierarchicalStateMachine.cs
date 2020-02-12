@@ -17,7 +17,7 @@ namespace Paps.StateMachines
 
         public int StateCount => _stateHierarchy.StateCount;
 
-        public int TransitionCount => _transitionManager.TransitionCount;
+        public int TransitionCount => _transitionHandler.TransitionCount;
 
         public bool IsStarted => _internalState != InternalState.Stopped;
 
@@ -53,7 +53,7 @@ namespace Paps.StateMachines
         private StateHierarchy<TState> _stateHierarchy;
         private StateHierarchyBehaviourScheduler<TState> _stateHierarchyBehaviourScheduler;
         private TransitionValidator<TState, TTrigger> _transitionValidator;
-        private TransitionManager<TState, TTrigger> _transitionManager;
+        private TransitionHandler<TState, TTrigger> _transitionHandler;
 
         private InternalState _internalState;
         private Transition<TState, TTrigger> _currentValidatedTransition;
@@ -72,7 +72,7 @@ namespace Paps.StateMachines
             _stateHierarchy = new StateHierarchy<TState>(_stateComparer);
             _stateHierarchyBehaviourScheduler = new StateHierarchyBehaviourScheduler<TState>(_stateHierarchy, _stateComparer);
             _transitionValidator = new TransitionValidator<TState, TTrigger>(_stateComparer, _triggerComparer, _stateHierarchyBehaviourScheduler);
-            _transitionManager = new TransitionManager<TState, TTrigger>(_stateComparer, _triggerComparer, _stateHierarchyBehaviourScheduler, _transitionValidator);
+            _transitionHandler = new TransitionHandler<TState, TTrigger>(_stateComparer, _triggerComparer, _stateHierarchyBehaviourScheduler, _transitionValidator);
 
             SubscribeToEventsForInternalStateChanging();
             SubscribeToEventsForSavingValidTransition();
@@ -90,15 +90,15 @@ namespace Paps.StateMachines
             _stateHierarchyBehaviourScheduler.OnTransitionFinished +=
                 () => SetInternalState(InternalState.EvaluatingTransitions);
 
-            _transitionManager.OnTransitionEvaluationBegan +=
+            _transitionHandler.OnTransitionEvaluationBegan +=
                 () => SetInternalState(InternalState.EvaluatingTransitions);
-            _transitionManager.OnTransitionEvaluationFinished +=
+            _transitionHandler.OnTransitionEvaluationFinished +=
                 () => SetInternalState(InternalState.Idle);
         }
 
         private void SubscribeToEventsForSavingValidTransition()
         {
-            _transitionManager.OnTransitionValidated += transition => _currentValidatedTransition = _currentValidatedTransition = transition;
+            _transitionHandler.OnTransitionValidated += transition => _currentValidatedTransition = _currentValidatedTransition = transition;
             _stateHierarchyBehaviourScheduler.OnActiveHierarchyPathChanged += () => _currentValidatedTransition = default;
         }
 
@@ -131,7 +131,7 @@ namespace Paps.StateMachines
             ValidateContainsId(transition.StateTo);
             ValidateIsNotIn(InternalState.EvaluatingTransitions);
 
-            _transitionManager.AddTransition(transition);
+            _transitionHandler.AddTransition(transition);
         }
 
         public bool ContainsGuardConditionOn(Transition<TState, TTrigger> transition, IGuardCondition guardCondition)
@@ -153,7 +153,7 @@ namespace Paps.StateMachines
 
         public bool ContainsTransition(Transition<TState, TTrigger> transition)
         {
-            return _transitionManager.ContainsTransition(transition);
+            return _transitionHandler.ContainsTransition(transition);
         }
 
         public IEnumerable<TState> GetActiveHierarchyPath()
@@ -189,7 +189,7 @@ namespace Paps.StateMachines
 
         public Transition<TState, TTrigger>[] GetTransitions()
         {
-            return _transitionManager.GetTransitions();
+            return _transitionHandler.GetTransitions();
         }
 
         public bool IsInState(TState stateId)
@@ -201,7 +201,12 @@ namespace Paps.StateMachines
         {
             ValidateContainsTransition(transition);
 
-            return _transitionValidator.RemoveGuardConditionFrom(transition, guardCondition);
+            bool removed = _transitionValidator.RemoveGuardConditionFrom(transition, guardCondition);
+
+            if (removed)
+                _transitionValidator.RemoveAllGuardConditionsFrom(transition);
+
+            return removed;
         }
 
         public bool RemoveState(TState stateId)
@@ -211,6 +216,8 @@ namespace Paps.StateMachines
                 ValidateIsNotIn(InternalState.EvaluatingTransitions);
                 ValidateIsNotInActiveHierarchy(stateId, "Cannot remove state because it is in the active hierarchy path");
                 ValidateIsNotNextStateOrInitialChildOfNextStateOnTransition(stateId);
+                
+                _transitionHandler.RemoveTransitionsRelatedTo(stateId);
 
                 return _stateHierarchy.RemoveState(stateId);
             }
@@ -252,7 +259,7 @@ namespace Paps.StateMachines
         {
             ValidateIsNotIn(InternalState.EvaluatingTransitions);
 
-            return _transitionManager.RemoveTransition(transition);
+            return _transitionHandler.RemoveTransition(transition);
         }
 
         public bool SendEvent(IEvent messageEvent)
@@ -328,7 +335,7 @@ namespace Paps.StateMachines
             ValidateIsStarted();
             ValidateIsNotIn(InternalState.Stopping);
             
-            _transitionManager.Trigger(trigger);
+            _transitionHandler.Trigger(trigger);
         }
 
         public void Update()

@@ -4,7 +4,7 @@ using System.Linq;
 
 namespace Paps.StateMachines
 {
-    internal class TransitionManager<TState, TTrigger>
+    internal class TransitionHandler<TState, TTrigger>
     {
         public int TransitionCount => _transitions.Count;
 
@@ -24,7 +24,7 @@ namespace Paps.StateMachines
 
         public bool IsEvaluatingTransitions { get; private set; }
 
-        public TransitionManager(IEqualityComparer<TState> stateComparer, IEqualityComparer<TTrigger> triggerComparer, 
+        public TransitionHandler(IEqualityComparer<TState> stateComparer, IEqualityComparer<TTrigger> triggerComparer, 
             StateHierarchyBehaviourScheduler<TState> stateHierarchyBehaviourScheduler, ITransitionValidator<TState, TTrigger> transitionValidator)
         {
             _stateComparer = stateComparer;
@@ -45,6 +45,24 @@ namespace Paps.StateMachines
         public bool RemoveTransition(Transition<TState, TTrigger> transition)
         {
             return _transitions.Remove(transition);
+        }
+
+        public void RemoveTransitionsRelatedTo(TState stateId)
+        {
+            List<Transition<TState, TTrigger>> toRemove = new List<Transition<TState, TTrigger>>();
+            
+            foreach (var transition in _transitions)
+            {
+                if(AreEquals(transition.StateFrom, stateId) || AreEquals(transition.StateTo, stateId))
+                    toRemove.Add(transition);
+            }
+
+            for (int i = 0; i < toRemove.Count; i++)
+            {
+                _transitions.Remove(toRemove[i]);
+            }
+            
+            toRemove.Clear();
         }
 
         public bool ContainsTransition(Transition<TState, TTrigger> transition)
@@ -126,6 +144,11 @@ namespace Paps.StateMachines
         private bool Matches(Transition<TState, TTrigger> transition, TState stateFrom, TTrigger trigger)
         {
             return _stateComparer.Equals(transition.StateFrom, stateFrom) && _triggerComparer.Equals(transition.Trigger, trigger);
+        }
+
+        private bool AreEquals(TState stateId1, TState stateId2)
+        {
+            return _stateComparer.Equals(stateId1, stateId2);
         }
     }
 }
