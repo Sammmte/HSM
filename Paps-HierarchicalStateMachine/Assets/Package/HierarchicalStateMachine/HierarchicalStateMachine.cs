@@ -209,7 +209,7 @@ namespace Paps.StateMachines
             if(ContainsState(stateId))
             {
                 ValidateIsNotIn(InternalState.EvaluatingTransitions);
-                ValidateIsNotInActiveHierarchy(stateId);
+                ValidateIsNotInActiveHierarchy(stateId, "Cannot remove state because it is in the active hierarchy path");
                 ValidateIsNotNextStateOrInitialChildOfNextStateOnTransition(stateId);
 
                 return _stateHierarchy.RemoveState(stateId);
@@ -234,16 +234,18 @@ namespace Paps.StateMachines
                             _stateHierarchy.AreParentAndInitialChildAtAnyLevel(_currentValidatedTransition.StateTo, stateId));
         }
 
-        private void ValidateIsNotInActiveHierarchy(TState stateId)
+        private void ValidateIsNotInActiveHierarchy(TState stateId, string message)
         {
-            if (IsInState(stateId)) throw new InvalidOperationException("Cannot remove state because it is in the active hierarchy path");
+            if (IsInState(stateId)) throw new InvalidOperationException(message);
         }
 
-        public bool RemoveChildFrom(TState superState, TState substate)
+        public bool RemoveChildFromParent(TState childState)
         {
             ValidateIsNotIn(InternalState.EvaluatingTransitions);
+            ValidateIsNotInActiveHierarchy(childState, "Cannot remove child " + childState + 
+                                                       " from its parent because it is in the active hierarchy path");
 
-            return _stateHierarchy.RemoveChildFrom(superState, substate);
+            return _stateHierarchy.RemoveChildFromParent(childState);
         }
 
         public bool RemoveTransition(Transition<TState, TTrigger> transition)
@@ -258,11 +260,35 @@ namespace Paps.StateMachines
             throw new System.NotImplementedException();
         }
 
-        public void SetChildTo(TState superState, TState substate)
+        public void SetChildTo(TState parentState, TState childState)
         {
             ValidateIsNotIn(InternalState.EvaluatingTransitions);
+            ValidateChildIsNotActiveOnAddChild(childState);
 
-            _stateHierarchy.AddChildTo(superState, substate);
+            ValidateDoesNotWantToAddChildBeingActiveWithNoOthersChilds(parentState, childState);
+            
+
+            _stateHierarchy.AddChildTo(parentState, childState);
+        }
+
+        private void ValidateChildIsNotActiveOnAddChild(TState childState)
+        {
+            if(IsInState(childState)) throw new CannotAddChildException("Cannot set state " + childState +
+                                                                        " because it is in the active hierarchy path");
+        }
+
+        private void ValidateDoesNotWantToAddChildBeingActiveWithNoOthersChilds(TState parentState, TState childState)
+        {
+            if (IsInState(parentState))
+            {
+                if (_stateHierarchy.ChildCountOf(parentState) == 0)
+                {
+                    throw new CannotAddChildException("Cannot set child " + childState +
+                                                      " to parent " + parentState +
+                                                      " because parent actually has no childs and is in the active hierarchy path." +
+                                                      " If a state has childs, at least one must be active");
+                }
+            }
         }
 
         public void Start()

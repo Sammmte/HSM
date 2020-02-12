@@ -93,7 +93,7 @@ namespace Paps.StateMachines
 
             if (HasParent(node))
             {
-                RemoveChildFrom(node.Parent.StateId, stateId);
+                RemoveChildFromParent(stateId);
             }
 
             var childs = GetImmediateChildsOf(stateId);
@@ -102,7 +102,7 @@ namespace Paps.StateMachines
             {
                 for (int i = 0; i < childs.Length; i++)
                 {
-                    RemoveChildFrom(stateId, childs[i]);
+                    RemoveChildFromParent(childs[i]);
                 }
             }
         }
@@ -175,22 +175,22 @@ namespace Paps.StateMachines
                 throw new CannotAddChildException("State with id " + parentId.ToString() + " cannot be parent of " + childId.ToString() + " because the last is parent of the first");
         }
 
-        public bool RemoveChildFrom(TState parentId, TState childId)
+        public bool RemoveChildFromParent(TState childId)
         {
-            ValidateContainsId(parentId);
             ValidateContainsId(childId);
 
-            if(AreImmediateParentAndChild(parentId, childId))
-            {
-                var parentNode = NodeOf(parentId);
-                var childNode = NodeOf(childId);
+            var childNode = NodeOf(childId);
 
+            if (childNode.Parent != null)
+            {
+                var parentNode = childNode.Parent;
+                
                 parentNode.Childs.Remove(childId);
                 childNode.Parent = null;
 
                 _roots.Add(childId, childNode);
 
-                if(ChildCountOf(parentId) == 0)
+                if(ChildCountOf(parentNode.StateId) == 0)
                 {
                     parentNode.InitialState = default;
                 }

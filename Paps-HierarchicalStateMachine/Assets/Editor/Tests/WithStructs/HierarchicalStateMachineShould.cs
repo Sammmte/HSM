@@ -251,7 +251,7 @@ namespace Tests.WithStructs
 
             hsm.SetChildTo(stateId1, stateId2);
 
-            hsm.RemoveChildFrom(stateId1, stateId2);
+            hsm.RemoveChildFromParent(stateId2);
 
             Assert.That(hsm.AreImmediateParentAndChild(stateId1, stateId2) == false, "Are not immediate relatives");
         }
@@ -554,7 +554,7 @@ namespace Tests.WithStructs
 
             hsm.SetChildTo(stateId1, stateId2);
 
-            hsm.RemoveChildFrom(stateId1, stateId2);
+            hsm.RemoveChildFromParent(stateId2);
 
             var roots = hsm.GetRoots();
 
@@ -577,7 +577,7 @@ namespace Tests.WithStructs
 
             hsm.SetChildTo(stateId1, stateId2);
 
-            hsm.RemoveChildFrom(stateId1, stateId2);
+            hsm.RemoveChildFromParent(stateId2);
 
             Assert.That(hsm.GetParentOf(stateId2) == stateId2, "Child has no parent after break substate relation");
         }
@@ -597,7 +597,7 @@ namespace Tests.WithStructs
 
             hsm.SetChildTo(stateId1, stateId2);
 
-            hsm.RemoveChildFrom(stateId1, stateId2);
+            hsm.RemoveChildFromParent(stateId2);
 
             var childs = hsm.GetImmediateChildsOf(stateId1);
 
@@ -933,7 +933,7 @@ namespace Tests.WithStructs
 
             hsm.SetChildTo(stateId1, stateId2);
 
-            hsm.RemoveChildFrom(stateId1, stateId2);
+            hsm.RemoveChildFromParent(stateId2);
 
             Assert.AreEqual(default(int), hsm.GetInitialStateOf(stateId1));
         }
@@ -1941,6 +1941,108 @@ namespace Tests.WithStructs
             hsm.Start();
 
             Assert.Throws<ProtectedStateException>(() => hsm.Trigger(trigger));
+        }
+
+        [Test]
+        public void Throw_An_Exception_If_User_Tries_To_Remove_An_Active_Child_State()
+        {
+            var hsm = NewStateMachine();
+
+            var stateId1 = 1;
+            var stateId2 = 2;
+
+            var stateObj = Substitute.For<IState>();
+            
+            hsm.AddState(stateId1, stateObj);
+            hsm.AddState(stateId2, stateObj);
+            
+            hsm.SetChildTo(stateId1, stateId2);
+            
+            hsm.Start();
+
+            Assert.Throws<InvalidOperationException>(() => hsm.RemoveChildFromParent(stateId2));
+            Assert.That(hsm.AreImmediateParentAndChild(stateId1, stateId2), "Still related");
+        }
+
+        [Test]
+        public void Throw_An_Exception_If_User_Tries_To_Add_An_Active_State_As_Child_To_Inactive_One()
+        {
+            var hsm = NewStateMachine();
+
+            var stateId1 = 1;
+            var stateId2 = 2;
+
+            var stateObj = Substitute.For<IState>();
+            
+            hsm.AddState(stateId1, stateObj);
+            hsm.AddState(stateId2, stateObj);
+            
+            hsm.Start();
+
+            Assert.Throws<CannotAddChildException>(() => hsm.SetChildTo(stateId2, stateId1));
+        }
+
+        [Test]
+        public void Throw_An_Exception_If_User_Tries_To_Add_A_Child_State_To_An_Active_Parent_That_Has_No_Childs()
+        {
+            var hsm = NewStateMachine();
+
+            var stateId1 = 1;
+            var stateId2 = 2;
+
+            var stateObj = Substitute.For<IState>();
+            
+            hsm.AddState(stateId1, stateObj);
+            hsm.AddState(stateId2, stateObj);
+            
+            hsm.Start();
+
+            Assert.Throws<CannotAddChildException>(() => hsm.SetChildTo(stateId1, stateId2));
+        }
+        
+        [Test]
+        public void Permit_Add_Child_State_If_Parent_Is_Active_And_Has_At_Least_One_Child()
+        {
+            var hsm = NewStateMachine();
+
+            var stateId1 = 1;
+            var stateId2 = 2;
+            var stateId3 = 3;
+
+            var stateObj = Substitute.For<IState>();
+            
+            hsm.AddState(stateId1, stateObj);
+            hsm.AddState(stateId2, stateObj);
+            hsm.AddState(stateId3, stateObj);
+
+            hsm.SetChildTo(stateId1, stateId2);
+            
+            hsm.Start();
+
+            Assert.DoesNotThrow(() => hsm.SetChildTo(stateId1, stateId3));
+        }
+        
+        [Test]
+        public void Permit_Remove_Inactive_Child_Event_If_Its_Parent_Is_Active()
+        {
+            var hsm = NewStateMachine();
+
+            var stateId1 = 1;
+            var stateId2 = 2;
+            var stateId3 = 3;
+
+            var stateObj = Substitute.For<IState>();
+            
+            hsm.AddState(stateId1, stateObj);
+            hsm.AddState(stateId2, stateObj);
+            hsm.AddState(stateId3, stateObj);
+
+            hsm.SetChildTo(stateId1, stateId2);
+            hsm.SetChildTo(stateId1, stateId3);
+            
+            hsm.Start();
+
+            Assert.DoesNotThrow(() => hsm.RemoveChildFromParent(stateId3));
         }
     }
 }

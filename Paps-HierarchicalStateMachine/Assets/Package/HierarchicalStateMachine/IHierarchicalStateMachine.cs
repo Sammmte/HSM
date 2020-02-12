@@ -9,8 +9,8 @@ namespace Paps.StateMachines
         event Action OnBeforeActiveHierarchyPathChanges;
         event Action OnActiveHierarchyPathChanged;
 
-        void SetChildTo(TState parentState, TState substate);
-        bool RemoveChildFrom(TState parentState, TState substate);
+        void SetChildTo(TState parentState, TState childState);
+        bool RemoveChildFromParent(TState childState);
 
         bool AreImmediateParentAndChild(TState parentState, TState substate);
 
