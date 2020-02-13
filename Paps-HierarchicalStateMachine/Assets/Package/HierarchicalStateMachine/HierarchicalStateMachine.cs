@@ -201,12 +201,7 @@ namespace Paps.StateMachines
         {
             ValidateContainsTransition(transition);
 
-            bool removed = _transitionValidator.RemoveGuardConditionFrom(transition, guardCondition);
-
-            if (removed)
-                _transitionValidator.RemoveAllGuardConditionsFrom(transition);
-
-            return removed;
+            return _transitionValidator.RemoveGuardConditionFrom(transition, guardCondition);
         }
 
         public bool RemoveState(TState stateId)
@@ -216,13 +211,25 @@ namespace Paps.StateMachines
                 ValidateIsNotIn(InternalState.EvaluatingTransitions);
                 ValidateIsNotInActiveHierarchy(stateId, "Cannot remove state because it is in the active hierarchy path");
                 ValidateIsNotNextStateOrInitialChildOfNextStateOnTransition(stateId);
-                
-                _transitionHandler.RemoveTransitionsRelatedTo(stateId);
+
+                RemoveTransitionsAndGuardConditionsRelatedTo(stateId);
 
                 return _stateHierarchy.RemoveState(stateId);
             }
 
             return false;
+        }
+
+        private void RemoveTransitionsAndGuardConditionsRelatedTo(TState stateId)
+        {
+            var removedTransitions = _transitionHandler.RemoveTransitionsRelatedTo(stateId);
+
+            for (int i = 0; i < removedTransitions.Count; i++)
+            {
+                _transitionValidator.RemoveAllGuardConditionsFrom(removedTransitions[i]);
+            }
+
+            removedTransitions.Clear();
         }
 
         private void ValidateIsNotNextStateOrInitialChildOfNextStateOnTransition(TState stateId)
@@ -259,7 +266,12 @@ namespace Paps.StateMachines
         {
             ValidateIsNotIn(InternalState.EvaluatingTransitions);
 
-            return _transitionHandler.RemoveTransition(transition);
+            bool removed = _transitionHandler.RemoveTransition(transition);
+
+            if (removed)
+                _transitionValidator.RemoveAllGuardConditionsFrom(transition);
+
+            return removed;
         }
 
         public bool SendEvent(IEvent messageEvent)
@@ -273,7 +285,6 @@ namespace Paps.StateMachines
             ValidateChildIsNotActiveOnAddChild(childState);
 
             ValidateDoesNotWantToAddChildBeingActiveWithNoOthersChilds(parentState, childState);
-            
 
             _stateHierarchy.AddChildTo(parentState, childState);
         }

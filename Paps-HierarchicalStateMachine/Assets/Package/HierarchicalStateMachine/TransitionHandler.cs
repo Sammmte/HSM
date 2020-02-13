@@ -47,7 +47,7 @@ namespace Paps.StateMachines
             return _transitions.Remove(transition);
         }
 
-        public void RemoveTransitionsRelatedTo(TState stateId)
+        public List<Transition<TState, TTrigger>> RemoveTransitionsRelatedTo(TState stateId)
         {
             List<Transition<TState, TTrigger>> toRemove = new List<Transition<TState, TTrigger>>();
             
@@ -61,8 +61,8 @@ namespace Paps.StateMachines
             {
                 _transitions.Remove(toRemove[i]);
             }
-            
-            toRemove.Clear();
+
+            return toRemove;
         }
 
         public bool ContainsTransition(Transition<TState, TTrigger> transition)

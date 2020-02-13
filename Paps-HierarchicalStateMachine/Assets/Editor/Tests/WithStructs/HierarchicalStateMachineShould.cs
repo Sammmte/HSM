@@ -2095,6 +2095,47 @@ namespace Tests.WithStructs
             hsm.RemoveTransition(transition);
 
             Assert.Throws<TransitionNotAddedException>(() => hsm.ContainsGuardConditionOn(transition, guardCondition));
+
+            hsm.AddTransition(transition);
+
+            Assert.DoesNotThrow(() => hsm.AddGuardConditionTo(transition, guardCondition));
+
+            Assert.That(hsm.GetGuardConditionsOf(transition).Count() == 1, "Contains just one guard condition");
+        }
+
+        [Test]
+        public void Remove_All_Transitions_And_Guard_Conditions_Of_A_Removed_State()
+        {
+            var hsm = NewStateMachine();
+
+            var stateId1 = 1;
+            var stateId2 = 2;
+
+            var stateObj = Substitute.For<IState>();
+
+            var trigger = 0;
+
+            var transition = NewTransition(stateId1, trigger, stateId2);
+
+            var guardCondition = Substitute.For<IGuardCondition>();
+
+            hsm.AddState(stateId1, stateObj);
+            hsm.AddState(stateId2, stateObj);
+
+            hsm.AddTransition(transition);
+
+            hsm.AddGuardConditionTo(transition, guardCondition);
+
+            hsm.RemoveState(stateId1);
+
+            Assert.That(hsm.ContainsTransition(transition) == false, "Does not contains transition");
+
+            hsm.AddState(stateId1, stateObj);
+            hsm.AddTransition(transition);
+
+            Assert.DoesNotThrow(() => hsm.AddGuardConditionTo(transition, guardCondition));
+
+            Assert.That(hsm.GetGuardConditionsOf(transition).Count() == 1, "Contains just one guard condition");
         }
     }
 }
