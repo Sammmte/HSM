@@ -54,6 +54,7 @@ namespace Paps.StateMachines
         private StateHierarchyBehaviourScheduler<TState> _stateHierarchyBehaviourScheduler;
         private TransitionValidator<TState, TTrigger> _transitionValidator;
         private TransitionHandler<TState, TTrigger> _transitionHandler;
+        private HierarchicalEventDispatcher<TState> _hierarchicalEventDispatcher;
 
         private InternalState _internalState;
         private Transition<TState, TTrigger> _currentValidatedTransition;
@@ -73,6 +74,7 @@ namespace Paps.StateMachines
             _stateHierarchyBehaviourScheduler = new StateHierarchyBehaviourScheduler<TState>(_stateHierarchy, _stateComparer);
             _transitionValidator = new TransitionValidator<TState, TTrigger>(_stateComparer, _triggerComparer, _stateHierarchyBehaviourScheduler);
             _transitionHandler = new TransitionHandler<TState, TTrigger>(_stateComparer, _triggerComparer, _stateHierarchyBehaviourScheduler, _transitionValidator);
+            _hierarchicalEventDispatcher = new HierarchicalEventDispatcher<TState>(_stateComparer, _stateHierarchyBehaviourScheduler);
 
             SubscribeToEventsForInternalStateChanging();
             SubscribeToEventsForSavingValidTransition();
@@ -274,11 +276,6 @@ namespace Paps.StateMachines
             return removed;
         }
 
-        public bool SendEvent(IEvent messageEvent)
-        {
-            throw new System.NotImplementedException();
-        }
-
         public void SetChildTo(TState parentState, TState childState)
         {
             ValidateIsNotIn(InternalState.EvaluatingTransitions);
@@ -381,29 +378,31 @@ namespace Paps.StateMachines
             return _stateHierarchy.GetRoots();
         }
 
+        public bool SendEvent(IEvent messageEvent)
+        {
+            ValidateIsStarted();
+
+            return _hierarchicalEventDispatcher.SendEvent(messageEvent);
+        }
+
         public void SubscribeEventHandlerTo(TState stateId, IStateEventHandler eventHandler)
         {
-            throw new NotImplementedException();
+            _hierarchicalEventDispatcher.AddEventHandlerTo(stateId, eventHandler);
         }
 
         public bool UnsubscribeEventHandlerFrom(TState stateId, IStateEventHandler eventHandler)
         {
-            throw new NotImplementedException();
+            return _hierarchicalEventDispatcher.RemoveEventHandlerFrom(stateId, eventHandler);
         }
 
         public bool HasEventHandlerOn(TState stateId, IStateEventHandler eventHandler)
         {
-            throw new NotImplementedException();
-        }
-
-        public bool HasAnyEventHandlerOn(TState stateId)
-        {
-            throw new NotImplementedException();
+            return _hierarchicalEventDispatcher.HasEventHandlerOn(stateId, eventHandler);
         }
 
         public IStateEventHandler[] GetEventHandlersOf(TState stateId)
         {
-            throw new NotImplementedException();
+            return _hierarchicalEventDispatcher.GetEventHandlersOf(stateId);
         }
 
         private void ValidateContainsId(TState stateId)

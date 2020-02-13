@@ -2137,5 +2137,157 @@ namespace Tests.WithStructs
 
             Assert.That(hsm.GetGuardConditionsOf(transition).Count() == 1, "Contains just one guard condition");
         }
+
+        [Test]
+        public void Subscribe_Event_Handlers_To_States()
+        {
+            var hsm = NewStateMachine();
+
+            var stateId = 1;
+
+            var stateObj = Substitute.For<IState>();
+
+            var eventHandler = Substitute.For<IStateEventHandler>();
+
+            hsm.AddState(stateId, stateObj);
+
+            hsm.SubscribeEventHandlerTo(stateId, eventHandler);
+
+            Assert.That(hsm.HasEventHandlerOn(stateId, eventHandler), "State " + stateId + " has event handler");
+        }
+
+        [Test]
+        public void Unsubscribe_Event_Handlers_From_States()
+        {
+            var hsm = NewStateMachine();
+
+            var stateId = 1;
+
+            var stateObj = Substitute.For<IState>();
+
+            var eventHandler = Substitute.For<IStateEventHandler>();
+
+            hsm.AddState(stateId, stateObj);
+
+            hsm.SubscribeEventHandlerTo(stateId, eventHandler);
+
+            hsm.UnsubscribeEventHandlerFrom(stateId, eventHandler);
+
+            Assert.That(hsm.HasEventHandlerOn(stateId, eventHandler) == false, "State " + stateId + " does not has event handler");
+        }
+
+        [Test]
+        public void Return_Event_Handlers_Of_A_Specific_State()
+        {
+            var hsm = NewStateMachine();
+
+            var stateId = 1;
+
+            var stateObj = Substitute.For<IState>();
+
+            var eventHandler1 = Substitute.For<IStateEventHandler>();
+            var eventHandler2 = Substitute.For<IStateEventHandler>();
+            var eventHandler3 = Substitute.For<IStateEventHandler>();
+
+            hsm.AddState(stateId, stateObj);
+
+            hsm.SubscribeEventHandlerTo(stateId, eventHandler1);
+            hsm.SubscribeEventHandlerTo(stateId, eventHandler2);
+
+            var eventHandlers = hsm.GetEventHandlersOf(stateId);
+
+            Assert.Contains(eventHandler1, eventHandlers);
+            Assert.Contains(eventHandler2, eventHandlers);
+            AssertExtensions.DoesNotContains(eventHandler3, eventHandlers);
+        }
+
+        [Test]
+        public void Send_Event_From_Leaf_To_Root()
+        {
+            var hsm = NewStateMachine();
+
+            var stateId1 = 1;
+            var stateId2 = 2;
+            var stateId3 = 3;
+
+            var stateObj = Substitute.For<IState>();
+
+            var eventHandler1 = Substitute.For<IStateEventHandler>();
+            var eventHandler2 = Substitute.For<IStateEventHandler>();
+            var eventHandler3 = Substitute.For<IStateEventHandler>();
+
+            var eventObj = Substitute.For<IEvent>();
+
+            hsm.AddState(stateId1, stateObj);
+            hsm.AddState(stateId2, stateObj);
+            hsm.AddState(stateId3, stateObj);
+
+            hsm.SetChildTo(stateId1, stateId2);
+            hsm.SetChildTo(stateId2, stateId3);
+
+            hsm.SubscribeEventHandlerTo(stateId1, eventHandler1);
+            hsm.SubscribeEventHandlerTo(stateId2, eventHandler2);
+            hsm.SubscribeEventHandlerTo(stateId3, eventHandler3);
+
+            hsm.Start();
+
+            hsm.SendEvent(eventObj);
+
+            Received.InOrder(() =>
+            {
+                eventHandler3.HandleEvent(eventObj);
+                eventHandler2.HandleEvent(eventObj);
+                eventHandler1.HandleEvent(eventObj);
+            });
+        }
+
+        [Test]
+        public void Return_True_On_Send_Event_If_Any_Event_Handler_Returns_True()
+        {
+            var hsm = NewStateMachine();
+
+            var stateId1 = 1;
+            var stateId2 = 2;
+            var stateId3 = 3;
+
+            var stateObj = Substitute.For<IState>();
+
+            var eventHandler1 = Substitute.For<IStateEventHandler>();
+            var eventHandler2 = Substitute.For<IStateEventHandler>();
+            var eventHandler3 = Substitute.For<IStateEventHandler>();
+
+            var eventObj = Substitute.For<IEvent>();
+
+            eventHandler2.HandleEvent(eventObj).Returns(true);
+
+            hsm.AddState(stateId1, stateObj);
+            hsm.AddState(stateId2, stateObj);
+            hsm.AddState(stateId3, stateObj);
+
+            hsm.SetChildTo(stateId1, stateId2);
+            hsm.SetChildTo(stateId2, stateId3);
+
+            hsm.SubscribeEventHandlerTo(stateId1, eventHandler1);
+            hsm.SubscribeEventHandlerTo(stateId2, eventHandler2);
+            hsm.SubscribeEventHandlerTo(stateId3, eventHandler3);
+
+            hsm.Start();
+
+            hsm.SendEvent(eventObj);
+
+            eventHandler3.Received(1).HandleEvent(eventObj);
+            eventHandler2.Received(1).HandleEvent(eventObj);
+            eventHandler1.DidNotReceive().HandleEvent(eventObj);
+        }
+
+        [Test]
+        public void Throw_An_Exception_If_User_Tries_To_Send_An_Event_And_State_Machine_Is_Not_Started()
+        {
+            var hsm = NewStateMachine();
+
+            var eventObj = Substitute.For<IEvent>();
+
+            Assert.Throws<StateMachineNotStartedException>(() => hsm.SendEvent(eventObj));
+        }
     }
 }
