@@ -214,9 +214,12 @@ namespace Paps.StateMachines
                 ValidateIsNotInActiveHierarchy(stateId, "Cannot remove state because it is in the active hierarchy path");
                 ValidateIsNotNextStateOrInitialChildOfNextStateOnTransition(stateId);
 
-                RemoveTransitionsAndGuardConditionsRelatedTo(stateId);
+                bool removed = _stateHierarchy.RemoveState(stateId);
 
-                return _stateHierarchy.RemoveState(stateId);
+                if(removed)
+                    RemoveTransitionsAndGuardConditionsRelatedTo(stateId);
+
+                return removed;
             }
 
             return false;
@@ -276,7 +279,7 @@ namespace Paps.StateMachines
             return removed;
         }
 
-        public void SetChildTo(TState parentState, TState childState)
+        public void AddChildTo(TState parentState, TState childState)
         {
             ValidateIsNotIn(InternalState.EvaluatingTransitions);
             ValidateChildIsNotActiveOnAddChild(childState);

@@ -82,6 +82,8 @@ namespace Paps.StateMachines
                 {
                     _initialState = default;
                 }
+
+                return true;
             }
 
             return false;

@@ -132,10 +132,10 @@ namespace Tests.WithClasses
             hsm.AddState(stateId3, stateObj);
             hsm.AddState(stateId4, stateObj);
 
-            hsm.SetChildTo(stateId1, stateId2);
-            hsm.SetChildTo(stateId2, stateId3);
+            hsm.AddChildTo(stateId1, stateId2);
+            hsm.AddChildTo(stateId2, stateId3);
 
-            hsm.SetChildTo(stateId1, stateId4);
+            hsm.AddChildTo(stateId1, stateId4);
 
             Assert.IsTrue(hsm.AreImmediateParentAndChild(stateId1, stateId2));
             Assert.IsTrue(hsm.AreImmediateParentAndChild(stateId1, stateId4));
@@ -153,17 +153,17 @@ namespace Tests.WithClasses
 
             var stateObj = Substitute.For<IState>();
 
-            Assert.Throws<StateIdNotAddedException>(() => hsm.SetChildTo(stateId1, stateId2));
-            Assert.Throws<StateIdNotAddedException>(() => hsm.SetChildTo(stateId2, stateId1));
+            Assert.Throws<StateIdNotAddedException>(() => hsm.AddChildTo(stateId1, stateId2));
+            Assert.Throws<StateIdNotAddedException>(() => hsm.AddChildTo(stateId2, stateId1));
 
             hsm.AddState(stateId1, stateObj);
 
-            Assert.Throws<StateIdNotAddedException>(() => hsm.SetChildTo(stateId1, stateId2));
-            Assert.Throws<StateIdNotAddedException>(() => hsm.SetChildTo(stateId2, stateId1));
+            Assert.Throws<StateIdNotAddedException>(() => hsm.AddChildTo(stateId1, stateId2));
+            Assert.Throws<StateIdNotAddedException>(() => hsm.AddChildTo(stateId2, stateId1));
 
             hsm.AddState(stateId2, stateObj);
 
-            Assert.DoesNotThrow(() => hsm.SetChildTo(stateId1, stateId2));
+            Assert.DoesNotThrow(() => hsm.AddChildTo(stateId1, stateId2));
         }
 
         [Test]
@@ -179,9 +179,9 @@ namespace Tests.WithClasses
             hsm.AddState(stateId1, stateObj);
             hsm.AddState(stateId2, stateObj);
 
-            hsm.SetChildTo(stateId1, stateId2);
+            hsm.AddChildTo(stateId1, stateId2);
 
-            Assert.DoesNotThrow(() => hsm.SetChildTo(stateId1, stateId2));
+            Assert.DoesNotThrow(() => hsm.AddChildTo(stateId1, stateId2));
         }
 
         [Test]
@@ -195,7 +195,7 @@ namespace Tests.WithClasses
 
             hsm.AddState(stateId, stateObj);
 
-            Assert.Throws<CannotAddChildException>(() => hsm.SetChildTo(stateId, stateId));
+            Assert.Throws<CannotAddChildException>(() => hsm.AddChildTo(stateId, stateId));
         }
 
         [Test]
@@ -213,9 +213,9 @@ namespace Tests.WithClasses
             hsm.AddState(stateId2, stateObj);
             hsm.AddState(stateId3, stateObj);
 
-            hsm.SetChildTo(stateId2, stateId3);
+            hsm.AddChildTo(stateId2, stateId3);
 
-            Assert.Throws<CannotAddChildException>(() => hsm.SetChildTo(stateId1, stateId3));
+            Assert.Throws<CannotAddChildException>(() => hsm.AddChildTo(stateId1, stateId3));
         }
 
         [Test]
@@ -231,9 +231,9 @@ namespace Tests.WithClasses
             hsm.AddState(stateId1, stateObj);
             hsm.AddState(stateId2, stateObj);
 
-            hsm.SetChildTo(stateId1, stateId2);
+            hsm.AddChildTo(stateId1, stateId2);
 
-            Assert.Throws<CannotAddChildException>(() => hsm.SetChildTo(stateId2, stateId1));
+            Assert.Throws<CannotAddChildException>(() => hsm.AddChildTo(stateId2, stateId1));
         }
 
         [Test]
@@ -249,7 +249,7 @@ namespace Tests.WithClasses
             hsm.AddState(stateId1, stateObj);
             hsm.AddState(stateId2, stateObj);
 
-            hsm.SetChildTo(stateId1, stateId2);
+            hsm.AddChildTo(stateId1, stateId2);
 
             hsm.RemoveChildFromParent(stateId2);
 
@@ -271,8 +271,8 @@ namespace Tests.WithClasses
             hsm.AddState(stateId2, stateObj);
             hsm.AddState(stateId3, stateObj);
 
-            hsm.SetChildTo(stateId1, stateId2);
-            hsm.SetChildTo(stateId2, stateId3);
+            hsm.AddChildTo(stateId1, stateId2);
+            hsm.AddChildTo(stateId2, stateId3);
 
             Assert.IsFalse(hsm.AreImmediateParentAndChild(stateId1, stateId3));
         }
@@ -290,7 +290,7 @@ namespace Tests.WithClasses
             hsm.AddState(stateId1, stateObj);
             hsm.AddState(stateId2, stateObj);
 
-            hsm.SetChildTo(stateId1, stateId2);
+            hsm.AddChildTo(stateId1, stateId2);
 
             Assert.IsTrue(hsm.AreImmediateParentAndChild(stateId1, stateId2));
         }
@@ -310,7 +310,7 @@ namespace Tests.WithClasses
             hsm.AddState(stateId2, stateObj);
             hsm.AddState(stateId3, stateObj);
 
-            hsm.SetChildTo(stateId1, stateId2);
+            hsm.AddChildTo(stateId1, stateId2);
 
             var roots = hsm.GetRoots();
 
@@ -340,7 +340,7 @@ namespace Tests.WithClasses
             hsm.AddState(stateId1, stateObj);
             hsm.AddState(stateId2, stateObj);
 
-            hsm.SetChildTo(stateId1, stateId2);
+            hsm.AddChildTo(stateId1, stateId2);
 
             var parent = hsm.GetParentOf(stateId2);
 
@@ -416,10 +416,10 @@ namespace Tests.WithClasses
             hsm.AddState(stateId3, stateObj);
             hsm.AddState(stateId4, stateObj);
 
-            hsm.SetChildTo(stateId1, stateId2);
-            hsm.SetChildTo(stateId1, stateId3);
+            hsm.AddChildTo(stateId1, stateId2);
+            hsm.AddChildTo(stateId1, stateId3);
 
-            hsm.SetChildTo(stateId2, stateId4);
+            hsm.AddChildTo(stateId2, stateId4);
 
             var childs = hsm.GetImmediateChildsOf(stateId1);
 
@@ -498,8 +498,8 @@ namespace Tests.WithClasses
             hsm.AddState(stateId2, stateObj);
             hsm.AddState(stateId3, stateObj);
 
-            hsm.SetChildTo(stateId1, stateId2);
-            hsm.SetChildTo(stateId1, stateId3);
+            hsm.AddChildTo(stateId1, stateId2);
+            hsm.AddChildTo(stateId1, stateId3);
 
             hsm.SetInitialStateTo(stateId1, stateId3);
 
@@ -552,7 +552,7 @@ namespace Tests.WithClasses
             hsm.AddState(stateId1, stateObj);
             hsm.AddState(stateId2, stateObj);
 
-            hsm.SetChildTo(stateId1, stateId2);
+            hsm.AddChildTo(stateId1, stateId2);
 
             hsm.RemoveChildFromParent(stateId2);
 
@@ -575,7 +575,7 @@ namespace Tests.WithClasses
             hsm.AddState(stateId1, stateObj);
             hsm.AddState(stateId2, stateObj);
 
-            hsm.SetChildTo(stateId1, stateId2);
+            hsm.AddChildTo(stateId1, stateId2);
 
             hsm.RemoveChildFromParent(stateId2);
 
@@ -595,7 +595,7 @@ namespace Tests.WithClasses
             hsm.AddState(stateId1, stateObj);
             hsm.AddState(stateId2, stateObj);
 
-            hsm.SetChildTo(stateId1, stateId2);
+            hsm.AddChildTo(stateId1, stateId2);
 
             hsm.RemoveChildFromParent(stateId2);
 
@@ -619,8 +619,8 @@ namespace Tests.WithClasses
             hsm.AddState(stateId2, stateObj);
             hsm.AddState(stateId3, stateObj);
 
-            hsm.SetChildTo(stateId1, stateId2);
-            hsm.SetChildTo(stateId2, stateId3);
+            hsm.AddChildTo(stateId1, stateId2);
+            hsm.AddChildTo(stateId2, stateId3);
 
             hsm.RemoveState(stateId2);
 
@@ -646,8 +646,8 @@ namespace Tests.WithClasses
             hsm.AddState(stateId2, stateObj);
             hsm.AddState(stateId3, stateObj);
 
-            hsm.SetChildTo(stateId1, stateId2);
-            hsm.SetChildTo(stateId2, stateId3);
+            hsm.AddChildTo(stateId1, stateId2);
+            hsm.AddChildTo(stateId2, stateId3);
 
             hsm.InitialState = stateId1;
 
@@ -677,8 +677,8 @@ namespace Tests.WithClasses
             hsm.AddState(stateId2, stateObj2);
             hsm.AddState(stateId3, stateObj3);
 
-            hsm.SetChildTo(stateId1, stateId2);
-            hsm.SetChildTo(stateId2, stateId3);
+            hsm.AddChildTo(stateId1, stateId2);
+            hsm.AddChildTo(stateId2, stateId3);
 
             hsm.InitialState = stateId1;
 
@@ -709,8 +709,8 @@ namespace Tests.WithClasses
             hsm.AddState(stateId2, stateObj);
             hsm.AddState(stateId3, stateObj);
 
-            hsm.SetChildTo(stateId1, stateId2);
-            hsm.SetChildTo(stateId2, stateId3);
+            hsm.AddChildTo(stateId1, stateId2);
+            hsm.AddChildTo(stateId2, stateId3);
 
             hsm.InitialState = stateId1;
 
@@ -741,8 +741,8 @@ namespace Tests.WithClasses
             hsm.AddState(stateId2, stateObj);
             hsm.AddState(stateId3, stateObj);
 
-            hsm.SetChildTo(stateId1, stateId2);
-            hsm.SetChildTo(stateId2, stateId3);
+            hsm.AddChildTo(stateId1, stateId2);
+            hsm.AddChildTo(stateId2, stateId3);
 
             hsm.InitialState = stateId1;
 
@@ -777,8 +777,8 @@ namespace Tests.WithClasses
             hsm.AddState(stateId2, stateObj2);
             hsm.AddState(stateId3, stateObj3);
 
-            hsm.SetChildTo(stateId1, stateId2);
-            hsm.SetChildTo(stateId2, stateId3);
+            hsm.AddChildTo(stateId1, stateId2);
+            hsm.AddChildTo(stateId2, stateId3);
 
             hsm.InitialState = stateId1;
 
@@ -811,8 +811,8 @@ namespace Tests.WithClasses
             hsm.AddState(stateId2, stateObj);
             hsm.AddState(stateId3, stateObj);
 
-            hsm.SetChildTo(stateId1, stateId2);
-            hsm.SetChildTo(stateId2, stateId3);
+            hsm.AddChildTo(stateId1, stateId2);
+            hsm.AddChildTo(stateId2, stateId3);
 
             hsm.InitialState = stateId1;
 
@@ -843,8 +843,8 @@ namespace Tests.WithClasses
             hsm.AddState(stateId2, stateObj2);
             hsm.AddState(stateId3, stateObj3);
 
-            hsm.SetChildTo(stateId1, stateId2);
-            hsm.SetChildTo(stateId2, stateId3);
+            hsm.AddChildTo(stateId1, stateId2);
+            hsm.AddChildTo(stateId2, stateId3);
 
             hsm.InitialState = stateId1;
 
@@ -913,7 +913,7 @@ namespace Tests.WithClasses
             hsm.AddState(stateId1, stateObj);
             hsm.AddState(stateId2, stateObj);
 
-            hsm.SetChildTo(stateId1, stateId2);
+            hsm.AddChildTo(stateId1, stateId2);
 
             Assert.AreEqual(stateId2, hsm.GetInitialStateOf(stateId1));
         }
@@ -931,7 +931,7 @@ namespace Tests.WithClasses
             hsm.AddState(stateId1, stateObj);
             hsm.AddState(stateId2, stateObj);
 
-            hsm.SetChildTo(stateId1, stateId2);
+            hsm.AddChildTo(stateId1, stateId2);
 
             hsm.RemoveChildFromParent(stateId2);
 
@@ -955,7 +955,7 @@ namespace Tests.WithClasses
             hsm.AddState(stateId2, stateObj2);
             hsm.AddState(stateId3, stateObj3);
 
-            hsm.SetChildTo(stateId1, stateId2);
+            hsm.AddChildTo(stateId1, stateId2);
 
             hsm.InitialState = stateId1;
 
@@ -1324,14 +1324,14 @@ namespace Tests.WithClasses
             hsm.AddState(stateId5, stateObj5);
             hsm.AddState(stateId6, stateObj6);
 
-            hsm.SetChildTo(stateId1, stateId2);
+            hsm.AddChildTo(stateId1, stateId2);
 
-            hsm.SetChildTo(stateId2, stateId3);
-            hsm.SetChildTo(stateId2, stateId5);
+            hsm.AddChildTo(stateId2, stateId3);
+            hsm.AddChildTo(stateId2, stateId5);
 
-            hsm.SetChildTo(stateId3, stateId4);
+            hsm.AddChildTo(stateId3, stateId4);
 
-            hsm.SetChildTo(stateId5, stateId6);
+            hsm.AddChildTo(stateId5, stateId6);
 
             hsm.AddTransition(transition);
 
@@ -1389,10 +1389,10 @@ namespace Tests.WithClasses
             hsm.AddState(stateId3, stateObj3);
             hsm.AddState(stateId4, stateObj4);
 
-            hsm.SetChildTo(stateId1, stateId2);
-            hsm.SetChildTo(stateId1, stateId3);
+            hsm.AddChildTo(stateId1, stateId2);
+            hsm.AddChildTo(stateId1, stateId3);
 
-            hsm.SetChildTo(stateId2, stateId4);
+            hsm.AddChildTo(stateId2, stateId4);
 
             hsm.AddTransition(transition1);
             hsm.AddTransition(transition2);
@@ -1452,10 +1452,10 @@ namespace Tests.WithClasses
             hsm.AddState(stateId3, stateObj3);
             hsm.AddState(stateId4, stateObj4);
 
-            hsm.SetChildTo(stateId1, stateId2);
-            hsm.SetChildTo(stateId1, stateId3);
+            hsm.AddChildTo(stateId1, stateId2);
+            hsm.AddChildTo(stateId1, stateId3);
 
-            hsm.SetChildTo(stateId2, stateId4);
+            hsm.AddChildTo(stateId2, stateId4);
 
             hsm.AddTransition(transition);
 
@@ -1868,7 +1868,7 @@ namespace Tests.WithClasses
             hsm.AddState(stateId1, stateObj1);
             hsm.AddState(stateId2, stateObj2);
 
-            hsm.SetChildTo(stateId1, stateId2);
+            hsm.AddChildTo(stateId1, stateId2);
 
             hsm.AddTransition(transition);
 
@@ -1897,7 +1897,7 @@ namespace Tests.WithClasses
             hsm.AddState(stateId1, stateObj1);
             hsm.AddState(stateId2, stateObj2);
 
-            hsm.SetChildTo(stateId1, stateId2);
+            hsm.AddChildTo(stateId1, stateId2);
 
             hsm.Start();
 
@@ -1931,10 +1931,10 @@ namespace Tests.WithClasses
             hsm.AddState(stateId4, stateObj2);
             hsm.AddState(stateId5, stateObj2);
 
-            hsm.SetChildTo(stateId2, stateId3);
-            hsm.SetChildTo(stateId3, stateId4);
+            hsm.AddChildTo(stateId2, stateId3);
+            hsm.AddChildTo(stateId3, stateId4);
 
-            hsm.SetChildTo(stateId3, stateId5);
+            hsm.AddChildTo(stateId3, stateId5);
 
             hsm.AddTransition(transition);
 
@@ -1956,7 +1956,7 @@ namespace Tests.WithClasses
             hsm.AddState(stateId1, stateObj);
             hsm.AddState(stateId2, stateObj);
 
-            hsm.SetChildTo(stateId1, stateId2);
+            hsm.AddChildTo(stateId1, stateId2);
 
             hsm.Start();
 
@@ -1979,7 +1979,7 @@ namespace Tests.WithClasses
 
             hsm.Start();
 
-            Assert.Throws<CannotAddChildException>(() => hsm.SetChildTo(stateId2, stateId1));
+            Assert.Throws<CannotAddChildException>(() => hsm.AddChildTo(stateId2, stateId1));
         }
 
         [Test]
@@ -1997,7 +1997,7 @@ namespace Tests.WithClasses
 
             hsm.Start();
 
-            Assert.Throws<CannotAddChildException>(() => hsm.SetChildTo(stateId1, stateId2));
+            Assert.Throws<CannotAddChildException>(() => hsm.AddChildTo(stateId1, stateId2));
         }
 
         [Test]
@@ -2015,11 +2015,11 @@ namespace Tests.WithClasses
             hsm.AddState(stateId2, stateObj);
             hsm.AddState(stateId3, stateObj);
 
-            hsm.SetChildTo(stateId1, stateId2);
+            hsm.AddChildTo(stateId1, stateId2);
 
             hsm.Start();
 
-            Assert.DoesNotThrow(() => hsm.SetChildTo(stateId1, stateId3));
+            Assert.DoesNotThrow(() => hsm.AddChildTo(stateId1, stateId3));
         }
 
         [Test]
@@ -2037,8 +2037,8 @@ namespace Tests.WithClasses
             hsm.AddState(stateId2, stateObj);
             hsm.AddState(stateId3, stateObj);
 
-            hsm.SetChildTo(stateId1, stateId2);
-            hsm.SetChildTo(stateId1, stateId3);
+            hsm.AddChildTo(stateId1, stateId2);
+            hsm.AddChildTo(stateId1, stateId3);
 
             hsm.Start();
 
@@ -2222,8 +2222,8 @@ namespace Tests.WithClasses
             hsm.AddState(stateId2, stateObj);
             hsm.AddState(stateId3, stateObj);
 
-            hsm.SetChildTo(stateId1, stateId2);
-            hsm.SetChildTo(stateId2, stateId3);
+            hsm.AddChildTo(stateId1, stateId2);
+            hsm.AddChildTo(stateId2, stateId3);
 
             hsm.SubscribeEventHandlerTo(stateId1, eventHandler1);
             hsm.SubscribeEventHandlerTo(stateId2, eventHandler2);
@@ -2264,8 +2264,8 @@ namespace Tests.WithClasses
             hsm.AddState(stateId2, stateObj);
             hsm.AddState(stateId3, stateObj);
 
-            hsm.SetChildTo(stateId1, stateId2);
-            hsm.SetChildTo(stateId2, stateId3);
+            hsm.AddChildTo(stateId1, stateId2);
+            hsm.AddChildTo(stateId2, stateId3);
 
             hsm.SubscribeEventHandlerTo(stateId1, eventHandler1);
             hsm.SubscribeEventHandlerTo(stateId2, eventHandler2);
