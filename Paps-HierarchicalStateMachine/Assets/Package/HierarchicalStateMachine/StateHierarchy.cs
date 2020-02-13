@@ -253,6 +253,9 @@ namespace Paps.StateMachines
 
         public bool ContainsState(TState stateId)
         {
+            if (stateId == null)
+                return false;
+
             return _states.ContainsKey(stateId);
         }
 
