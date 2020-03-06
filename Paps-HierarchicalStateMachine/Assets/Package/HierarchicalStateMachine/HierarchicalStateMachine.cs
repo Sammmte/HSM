@@ -217,7 +217,10 @@ namespace Paps.StateMachines
                 bool removed = _stateHierarchy.RemoveState(stateId);
 
                 if(removed)
+                {
                     RemoveTransitionsAndGuardConditionsRelatedTo(stateId);
+                    _hierarchicalEventDispatcher.RemoveEventHandlersFrom(stateId);
+                }
 
                 return removed;
             }

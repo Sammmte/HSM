@@ -50,6 +50,11 @@ namespace Paps.StateMachines
             return false;
         }
 
+        public void RemoveEventHandlersFrom(TState stateId)
+        {
+            _eventHandlers.Remove(stateId);
+        }
+
         public bool HasEventHandlerOn(TState stateId, IStateEventHandler eventHandler)
         {
             if (_eventHandlers.ContainsKey(stateId))

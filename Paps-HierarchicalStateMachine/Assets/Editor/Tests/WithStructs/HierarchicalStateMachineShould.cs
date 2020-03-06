@@ -2289,5 +2289,25 @@ namespace Tests.WithStructs
 
             Assert.Throws<StateMachineNotStartedException>(() => hsm.SendEvent(eventObj));
         }
+
+        [Test]
+        public void Remove_Event_Handlers_Related_To_A_Removed_State()
+        {
+            var hsm = NewStateMachine();
+
+            var stateId = 1;
+
+            var stateObj = Substitute.For<IState>();
+
+            var eventHandler = Substitute.For<IStateEventHandler>();
+
+            hsm.AddState(stateId, stateObj);
+
+            hsm.SubscribeEventHandlerTo(stateId, eventHandler);
+
+            hsm.RemoveState(stateId);
+
+            Assert.That(() => hsm.HasEventHandlerOn(stateId, eventHandler) == false, "Event was removed the moment the state was removed");
+        }
     }
 }
