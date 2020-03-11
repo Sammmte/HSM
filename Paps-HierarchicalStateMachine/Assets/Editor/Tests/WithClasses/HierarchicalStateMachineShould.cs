@@ -2289,5 +2289,27 @@ namespace Tests.WithClasses
 
             Assert.Throws<StateMachineNotStartedException>(() => hsm.SendEvent(eventObj));
         }
+        
+        [Test]
+        public void Return_Null_If_There_Is_No_Guard_Conditions_Related_To_An_Existing_Transition()
+        {
+            var hsm = NewStateMachine();
+
+            var stateId1 = "1";
+            var stateId2 = "2";
+
+            var stateObj = Substitute.For<IState>();
+
+            var trigger = "0";
+
+            var transition = NewTransition(stateId1, trigger, stateId2);
+            
+            hsm.AddState(stateId1, stateObj);
+            hsm.AddState(stateId2, stateObj);
+            
+            hsm.AddTransition(transition);
+            
+            Assert.IsNull(hsm.GetGuardConditionsOf(transition));
+        }
     }
 }

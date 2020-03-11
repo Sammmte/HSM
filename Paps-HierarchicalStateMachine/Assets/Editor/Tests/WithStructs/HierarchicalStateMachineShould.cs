@@ -1220,7 +1220,7 @@ namespace Tests.WithStructs
         }
 
         [Test]
-        public void Return_Transitions_Of_A_Specific_Transition()
+        public void Return_Guard_Conditions_Of_A_Specific_Transition()
         {
             var hsm = NewStateMachine();
 
@@ -2308,6 +2308,28 @@ namespace Tests.WithStructs
             hsm.RemoveState(stateId);
 
             Assert.That(() => hsm.HasEventHandlerOn(stateId, eventHandler) == false, "Event was removed the moment the state was removed");
+        }
+
+        [Test]
+        public void Return_Null_If_There_Is_No_Guard_Conditions_Related_To_An_Existing_Transition()
+        {
+            var hsm = NewStateMachine();
+
+            var stateId1 = 1;
+            var stateId2 = 2;
+
+            var stateObj = Substitute.For<IState>();
+
+            var trigger = 0;
+
+            var transition = NewTransition(stateId1, trigger, stateId2);
+            
+            hsm.AddState(stateId1, stateObj);
+            hsm.AddState(stateId2, stateObj);
+            
+            hsm.AddTransition(transition);
+            
+            Assert.IsNull(hsm.GetGuardConditionsOf(transition));
         }
     }
 }
