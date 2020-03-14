@@ -47,6 +47,6 @@
     "com.unity.modules.vr": "1.0.0",
     "com.unity.modules.wind": "1.0.0",
     "com.unity.modules.xr": "1.0.0",
-	"paps.plain-state-machine": "0.0.7-unity"
+	"paps.plain-state-machine": "0.0.8-unity"
   }
 }
