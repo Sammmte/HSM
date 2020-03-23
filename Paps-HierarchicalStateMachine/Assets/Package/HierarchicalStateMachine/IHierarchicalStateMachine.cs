@@ -6,8 +6,8 @@ namespace Paps.StateMachines
     public interface IHierarchicalStateMachine<TState, TTrigger> : IStateMachine<TState, TTrigger>, IGuardedStateMachine<TState, TTrigger>,
         IEventDispatcherStateMachine<TState, TTrigger>
     {
-        event Action OnBeforeActiveHierarchyPathChanges;
-        event Action OnActiveHierarchyPathChanged;
+        event HierarchyPathChanged<TTrigger> OnBeforeActiveHierarchyPathChanges;
+        event HierarchyPathChanged<TTrigger> OnActiveHierarchyPathChanged;
 
         void AddChildTo(TState parentState, TState childState);
         bool RemoveChildFromParent(TState childState);

@@ -1,10 +1,8 @@
 ﻿using NSubstitute;
 using NUnit.Framework;
 using Paps.StateMachines;
-using System.Linq;
 using System;
-using System.Collections;
-using System.Collections.Generic;
+using System.Linq;
 
 namespace Tests.WithStructs
 {
@@ -18,6 +16,11 @@ namespace Tests.WithStructs
         private static Transition<int, int> NewTransition(int stateFrom, int trigger, int stateTo)
         {
             return new Transition<int, int>(stateFrom, trigger, stateTo);
+        }
+
+        private static HierarchyPathChanged<int> NewEventHandler()
+        {
+            return Substitute.For<HierarchyPathChanged<int>>();
         }
 
         [Test]
@@ -1676,7 +1679,7 @@ namespace Tests.WithStructs
 
             var transition = NewTransition(stateId1, trigger, stateId2);
 
-            var eventHandler = Substitute.For<Action>();
+            var eventHandler = NewEventHandler();
             
             hsm.AddState(stateId1, stateObj1);
             hsm.AddState(stateId2, stateObj2);
@@ -1691,7 +1694,7 @@ namespace Tests.WithStructs
             
             Received.InOrder(() =>
             {
-                eventHandler.Invoke();
+                eventHandler.Invoke(trigger);
                 stateObj1.Exit();
             });
         }
@@ -1711,7 +1714,7 @@ namespace Tests.WithStructs
 
             var transition = NewTransition(stateId1, trigger, stateId2);
 
-            var eventHandler = Substitute.For<Action>();
+            var eventHandler = NewEventHandler();
             
             hsm.AddState(stateId1, stateObj1);
             hsm.AddState(stateId2, stateObj2);
@@ -1727,7 +1730,7 @@ namespace Tests.WithStructs
             Received.InOrder(() =>
             {
                 stateObj1.Exit();
-                eventHandler.Invoke();
+                eventHandler.Invoke(trigger);
                 stateObj2.Enter();
             });
         }

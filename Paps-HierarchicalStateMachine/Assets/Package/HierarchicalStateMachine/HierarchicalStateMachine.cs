@@ -36,16 +36,8 @@ namespace Paps.StateMachines
             }
         }
 
-        public event Action OnBeforeActiveHierarchyPathChanges
-        {
-            add { _stateHierarchyBehaviourScheduler.OnBeforeActiveHierarchyPathChanges += value; }
-            remove { _stateHierarchyBehaviourScheduler.OnBeforeActiveHierarchyPathChanges -= value; }
-        }
-        public event Action OnActiveHierarchyPathChanged
-        {
-            add { _stateHierarchyBehaviourScheduler.OnActiveHierarchyPathChanged += value; }
-            remove { _stateHierarchyBehaviourScheduler.OnActiveHierarchyPathChanged -= value; }
-        }
+        public event HierarchyPathChanged<TTrigger> OnBeforeActiveHierarchyPathChanges;
+        public event HierarchyPathChanged<TTrigger> OnActiveHierarchyPathChanged;
 
         private Comparer<TState> _stateComparer;
         private Comparer<TTrigger> _triggerComparer;
@@ -77,6 +69,7 @@ namespace Paps.StateMachines
             _hierarchicalEventDispatcher = new HierarchicalEventDispatcher<TState>(_stateComparer, _stateHierarchyBehaviourScheduler);
 
             SubscribeToEventsForInternalStateChanging();
+            SubscribeToHierarchyPathChangeEvents();
             SubscribeToEventsForSavingValidTransition();
         }
 
@@ -87,7 +80,7 @@ namespace Paps.StateMachines
 
         private void SubscribeToEventsForInternalStateChanging()
         {
-            OnBeforeActiveHierarchyPathChanges += () => SetInternalState(InternalState.Transitioning);
+            OnBeforeActiveHierarchyPathChanges += _ => SetInternalState(InternalState.Transitioning);
 
             _stateHierarchyBehaviourScheduler.OnTransitionFinished +=
                 () => SetInternalState(InternalState.EvaluatingTransitions);
@@ -102,6 +95,22 @@ namespace Paps.StateMachines
         {
             _transitionHandler.OnTransitionValidated += transition => _currentValidatedTransition = _currentValidatedTransition = transition;
             _stateHierarchyBehaviourScheduler.OnActiveHierarchyPathChanged += () => _currentValidatedTransition = default;
+        }
+
+        private void CallOnBeforeActiveHierarchyPathChangesEvent()
+        {
+            OnBeforeActiveHierarchyPathChanges?.Invoke(_currentValidatedTransition.Trigger);
+        }
+
+        private void CallOnActiveHierarchyPathChangedEvent()
+        {
+            OnActiveHierarchyPathChanged?.Invoke(_currentValidatedTransition.Trigger);
+        }
+
+        private void SubscribeToHierarchyPathChangeEvents()
+        {
+            _stateHierarchyBehaviourScheduler.OnBeforeActiveHierarchyPathChanges += CallOnBeforeActiveHierarchyPathChangesEvent;
+            _stateHierarchyBehaviourScheduler.OnActiveHierarchyPathChanged += CallOnActiveHierarchyPathChangedEvent;
         }
 
         public void SetStateComparer(IEqualityComparer<TState> stateComparer)

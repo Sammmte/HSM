@@ -20,6 +20,11 @@ namespace Tests.WithClasses
             return new Transition<string, string>(stateFrom, trigger, stateTo);
         }
 
+        private static HierarchyPathChanged<string> NewEventHandler()
+        {
+            return Substitute.For<HierarchyPathChanged<string>>();
+        }
+
         [Test]
         public void Add_States()
         {
@@ -1676,7 +1681,7 @@ namespace Tests.WithClasses
 
             var transition = NewTransition(stateId1, trigger, stateId2);
 
-            var eventHandler = Substitute.For<Action>();
+            var eventHandler = NewEventHandler();
 
             hsm.AddState(stateId1, stateObj1);
             hsm.AddState(stateId2, stateObj2);
@@ -1691,7 +1696,7 @@ namespace Tests.WithClasses
 
             Received.InOrder(() =>
             {
-                eventHandler.Invoke();
+                eventHandler.Invoke(trigger);
                 stateObj1.Exit();
             });
         }
@@ -1711,7 +1716,7 @@ namespace Tests.WithClasses
 
             var transition = NewTransition(stateId1, trigger, stateId2);
 
-            var eventHandler = Substitute.For<Action>();
+            var eventHandler = NewEventHandler();
 
             hsm.AddState(stateId1, stateObj1);
             hsm.AddState(stateId2, stateObj2);
@@ -1727,7 +1732,7 @@ namespace Tests.WithClasses
             Received.InOrder(() =>
             {
                 stateObj1.Exit();
-                eventHandler.Invoke();
+                eventHandler.Invoke(trigger);
                 stateObj2.Enter();
             });
         }
