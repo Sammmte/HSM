@@ -2334,5 +2334,51 @@ namespace Tests.WithStructs
             
             Assert.IsNull(hsm.GetGuardConditionsOf(transition));
         }
+
+        [Test]
+        public void Cancel_Updates_If_Hierarchy_Path_Changed_On_Any_Update()
+        {
+            var hsm = NewStateMachine();
+
+            var stateId1 = 1;
+            var stateId2 = 2;
+            var stateId3 = 3;
+            var stateId4 = 4;
+            var stateId5 = 5;
+
+            var stateObj1 = Substitute.For<IState>();
+            var stateObj2 = Substitute.For<IState>();
+            var stateObj3 = Substitute.For<IState>();
+            var stateObj4 = Substitute.For<IState>();
+            var stateObj5 = Substitute.For<IState>();
+
+            var trigger = 0;
+
+            var transition = NewTransition(stateId1, trigger, stateId3);
+            
+            stateObj1.When(state => state.Update())
+                .Do(_ => hsm.Trigger(trigger));
+            
+            hsm.AddState(stateId1, stateObj1);
+            hsm.AddState(stateId2, stateObj2);
+            hsm.AddState(stateId3, stateObj3);
+            hsm.AddState(stateId4, stateObj4);
+            hsm.AddState(stateId5, stateObj5);
+            
+            hsm.AddChildTo(stateId1, stateId2);
+            hsm.AddChildTo(stateId3, stateId4);
+            hsm.AddChildTo(stateId4, stateId5);
+            
+            hsm.AddTransition(transition);
+            
+            hsm.Start();
+            
+            hsm.Update();
+            
+            stateObj2.DidNotReceive().Update();
+            stateObj3.DidNotReceive().Update();
+            stateObj4.DidNotReceive().Update();
+            stateObj5.DidNotReceive().Update();
+        }
     }
 }

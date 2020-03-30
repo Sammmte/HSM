@@ -16,12 +16,17 @@ namespace Paps.StateMachines
 
         public event Action OnTransitionFinished;
 
+        private bool isUpdating;
+        private bool hasSwitchedOnUpdate;
+
         public StateHierarchyBehaviourScheduler(StateHierarchy<TState> stateHierarchy, IEqualityComparer<TState> stateComparer)
         {
             _stateHierarchy = stateHierarchy;
             _stateComparer = stateComparer;
 
             _activeHierarchyPath = new List<KeyValuePair<TState, IState>>();
+
+            OnTransitionFinished += CatchSwitchOnUpdate;
         }
 
         public void Enter()
@@ -94,10 +99,21 @@ namespace Paps.StateMachines
 
         public void Update()
         {
-            for(int i = 0; i < _activeHierarchyPath.Count; i++)
+            isUpdating = true;
+            
+            for(int i = 0; i < _activeHierarchyPath.Count && !hasSwitchedOnUpdate; i++)
             {
                 _activeHierarchyPath[i].Value.Update();
             }
+
+            hasSwitchedOnUpdate = false;
+            isUpdating = false;
+        }
+
+        private void CatchSwitchOnUpdate()
+        {
+            if (isUpdating)
+                hasSwitchedOnUpdate = true;
         }
 
         private KeyValuePair<TState, IState> NewKeyValueFor(TState stateId)
@@ -144,7 +160,8 @@ namespace Paps.StateMachines
 
         public void SwitchTo(TState newActiveState)
         {
-            if (IsValidSwitchTo(newActiveState, out TState activeSibling) == false) throw new InvalidOperationException("Cannot switch to " + newActiveState);
+            if (IsValidSwitchTo(newActiveState, out TState activeSibling) == false)
+                throw new InvalidOperationException("Cannot switch to " + newActiveState);
 
             OnBeforeActiveHierarchyPathChanges?.Invoke();
 
