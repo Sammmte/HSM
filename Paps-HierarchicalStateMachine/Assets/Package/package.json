@@ -1,11 +1,11 @@
 {
   "name": "paps.hierarchical-state-machine",
-  "version": "0.0.6-unity",
+  "version": "0.0.7-unity",
   "displayName": "Paps Hierarchical State Machine",
   "unity": "2019.2",
   "description": "A hierarchical state machine made in c#",
   "dependencies": {
-    "paps.plain-state-machine": "0.0.8-unity"
+    "paps.plain-state-machine": "0.0.9-unity"
   },
   "keywords": [
     "c#",
