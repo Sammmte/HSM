@@ -31,7 +31,7 @@ namespace Tests.WithStructs
         [Test]
         public void Add_Behavioural_States()
         {
-            var fsm = new PlainStateMachine<int, int>();
+            var fsm = new HierarchicalStateMachine<int, int>();
             
             var behaviouralState1 = fsm.AddWithBehaviours(1);
 
@@ -54,7 +54,7 @@ namespace Tests.WithStructs
         [Test]
         public void Add_Behaviour_To_Behavioural_States()
         {
-            var fsm = new PlainStateMachine<int, int>();
+            var fsm = new HierarchicalStateMachine<int, int>();
 
             var stateBehaviour1 = Substitute.For<IStateBehaviour>();
 
@@ -68,7 +68,7 @@ namespace Tests.WithStructs
         [Test]
         public void Add_Multiple_Behaviours_To_Behavioural_States()
         {
-            var fsm = new PlainStateMachine<int, int>();
+            var fsm = new HierarchicalStateMachine<int, int>();
 
             var stateBehaviour1 = Substitute.For<IStateBehaviour>();
             var stateBehaviour2 = Substitute.For<IStateBehaviour>();
@@ -84,7 +84,7 @@ namespace Tests.WithStructs
         [Test]
         public void Do_Nothing_If_User_Tries_To_Add_The_Same_Behaviour_On_The_Same_State_Twice()
         {
-            var fsm = new PlainStateMachine<int, int>();
+            var fsm = new HierarchicalStateMachine<int, int>();
 
             var stateBehaviour1 = Substitute.For<IStateBehaviour>();
 
@@ -98,7 +98,7 @@ namespace Tests.WithStructs
         [Test]
         public void Remove_Behaviours_From_Behavioural_States()
         {
-            var fsm = new PlainStateMachine<int, int>();
+            var fsm = new HierarchicalStateMachine<int, int>();
 
             var stateBehaviour1 = Substitute.For<IStateBehaviour>();
             var stateBehaviour2 = Substitute.For<IStateBehaviour>();
@@ -125,7 +125,7 @@ namespace Tests.WithStructs
         [Test]
         public void Return_Behaviour_Of_Specific_Type_From_Any_State()
         {
-            var fsm = new PlainStateMachine<int, int>();
+            var fsm = new HierarchicalStateMachine<int, int>();
 
             var stateBehaviour = new TestStateBehaviour();
 
@@ -137,7 +137,7 @@ namespace Tests.WithStructs
         [Test]
         public void Return_Behaviour_Of_Specific_Type_From_Specific_State()
         {
-            var fsm = new PlainStateMachine<int, int>();
+            var fsm = new HierarchicalStateMachine<int, int>();
 
             var stateBehaviour = new TestStateBehaviour();
 
@@ -149,7 +149,7 @@ namespace Tests.WithStructs
         [Test]
         public void Return_Behaviours_Of_Specific_Type_From_All_Behavioural_States()
         {
-            var fsm = new PlainStateMachine<int, int>();
+            var fsm = new HierarchicalStateMachine<int, int>();
 
             var stateBehaviour1 = new TestStateBehaviour();
             var stateBehaviour2 = new TestStateBehaviour();
@@ -167,7 +167,7 @@ namespace Tests.WithStructs
         [Test]
         public void Return_Behaviours_Of_Specific_Type_From_Specific_Behavioural_State()
         {
-            var fsm = new PlainStateMachine<int, int>();
+            var fsm = new HierarchicalStateMachine<int, int>();
 
             var stateBehaviour1 = new TestStateBehaviour();
             var stateBehaviour2 = new TestStateBehaviour();
@@ -185,7 +185,7 @@ namespace Tests.WithStructs
         [Test]
         public void Iterate_Over_All_Behaviours()
         {
-            var fsm = new PlainStateMachine<int, int>();
+            var fsm = new HierarchicalStateMachine<int, int>();
 
             var stateBehaviour1 = Substitute.For<IStateBehaviour>();
             var stateBehaviour2 = Substitute.For<IStateBehaviour>();
@@ -209,7 +209,7 @@ namespace Tests.WithStructs
         [Test]
         public void Iterate_Over_All_Behaviours_Of_Specific_State()
         {
-            var fsm = new PlainStateMachine<int, int>();
+            var fsm = new HierarchicalStateMachine<int, int>();
 
             var stateBehaviour1 = Substitute.For<IStateBehaviour>();
             var stateBehaviour2 = Substitute.For<IStateBehaviour>();
@@ -234,7 +234,7 @@ namespace Tests.WithStructs
         [Test]
         public void Throw_An_Exception_If_User_Tries_To_Add_A_Null_Behaviour()
         {
-            var fsm = new PlainStateMachine<int, int>();
+            var fsm = new HierarchicalStateMachine<int, int>();
 
             var stateBehaviour1 = Substitute.For<IStateBehaviour>();
 
@@ -249,7 +249,7 @@ namespace Tests.WithStructs
         [Test]
         public void Throw_An_Exception_If_User_Tries_To_Remove_A_Null_Behaviour()
         {
-            var fsm = new PlainStateMachine<int, int>();
+            var fsm = new HierarchicalStateMachine<int, int>();
 
             Assert.Throws<ArgumentNullException>(() => fsm.RemoveBehaviourFrom(1, null));
         }
@@ -257,7 +257,7 @@ namespace Tests.WithStructs
         [Test]
         public void Throw_An_Exception_If_User_Asks_If_Contains_Behaviour_With_A_Null_Behaviour()
         {
-            var fsm = new PlainStateMachine<int, int>();
+            var fsm = new HierarchicalStateMachine<int, int>();
 
             Assert.Throws<ArgumentNullException>(() => fsm.ContainsBehaviour(null));
             Assert.Throws<ArgumentNullException>(() => fsm.ContainsBehaviourOn(1, null));
@@ -266,7 +266,7 @@ namespace Tests.WithStructs
         [Test]
         public void Throw_An_Exception_If_User_Tries_To_Iterate_Over_Behaviours_With_A_Null_Delegate()
         {
-            var fsm = new PlainStateMachine<int, int>();
+            var fsm = new HierarchicalStateMachine<int, int>();
 
             Assert.Throws<ArgumentNullException>(() => fsm.ForeachBehaviour(null));
             Assert.Throws<ArgumentNullException>(() => fsm.ForeachBehaviourOn(1, null));
@@ -275,7 +275,7 @@ namespace Tests.WithStructs
         [Test]
         public void Enter_Update_And_Exit_Behaviours()
         {
-            var fsm = new PlainStateMachine<int, int>();
+            var fsm = new HierarchicalStateMachine<int, int>();
 
             var stateBehaviour1 = Substitute.For<IStateBehaviour>();
             var stateBehaviour2 = Substitute.For<IStateBehaviour>();
